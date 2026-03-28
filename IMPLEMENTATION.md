@@ -111,10 +111,10 @@ Refs #5
   - Gate passes (deploys) when delta ≥ 0
   - Gate blocks (logs, no deploy) when delta < 0
 - [x] `src/deployment_gate.py` — runs held-out eval against new adapter vs baseline; returns delta; gates deployment
-- [ ] `tests/training/deploy.test.ts`
+- [x] `tests/training/deploy.test.ts`
   - `POST /lora-adapters` called with correct adapter id and scale
   - Successful swap logged; failed swap raises and logs without crashing pipeline
-- [ ] `src/lora_deployer.ts` — calls llama.cpp `POST /lora-adapters`; logs result; handles errors
+- [x] `src/lora_deployer.ts` — calls llama.cpp `POST /lora-adapters`; logs result; handles errors
 
 **Verification:** Seed buffer with N synthetic DPO candidates; trigger training run; verify `adapter.gguf` produced; verify delta eval logged; verify adapter active on llama.cpp server (`GET /lora-adapters` confirms). All tests pass.
 
