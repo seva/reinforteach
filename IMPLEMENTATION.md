@@ -128,11 +128,11 @@ Refs #6
 
 ### Tasks
 
-- [ ] `tests/integration/test_train_and_deploy.py`
+- [x] `tests/integration/test_train_and_deploy.py`
   - Full chain with synthetic buffer: produces `adapter.gguf`, returns deploy decision
   - Blocks (no deploy) when deployment gate delta < 0
   - Nonzero exit when dpo_runner fails (buffer too small)
-- [ ] `src/train_and_deploy.py` — orchestration subprocess: chains dpo_runner → gguf_converter → deployment_gate; exit code 0 = deploy, 1 = block, 2 = error; JSON to stdout with `{adapter_path, delta, deploy}`
+- [x] `src/train_and_deploy.py` — orchestration subprocess: chains dpo_runner → gguf_converter → deployment_gate; exit code 0 = deploy, 1 = block, 2 = error; JSON to stdout with `{adapter_path, delta, deploy}`
 - [ ] `tests/integration/scheduler_subprocess.test.ts`
   - `runTraining` spawns `train_and_deploy.py` with correct args
   - Resolves on exit code 0 or 1 (deploy/block); rejects on exit code 2 (error)
