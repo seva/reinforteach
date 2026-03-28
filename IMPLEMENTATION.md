@@ -13,8 +13,10 @@ Refs #1
 - [ ] Subagent spawn API: document how to invoke a subagent, pass context, and receive output — `docs/openclaw-subagent-api.md`
 - [ ] llama.cpp server API: document model-swap and inference endpoints — `docs/llamacpp-api.md`
 - [ ] Unsloth training interface: document DPO and GRPO CLI args, dataset format (jsonl fields), and output artifacts — `docs/unsloth-training.md`
+- [ ] DPO vs GRPO: document data shape requirements for each; evaluate whether the candidate synthesizer can produce both or requires a branch; record tradeoffs — `docs/training-algorithm-tradeoffs.md`
+- [ ] Positive signal path: define and evaluate "successful session" criterion options (no-correction window, oracle quality score, explicit operator flag); document tradeoffs — `docs/positive-signal-path.md`
 
-**Outputs:** five discovery docs in `docs/` — hard gates for all implementation phases.
+**Outputs:** seven discovery docs in `docs/` — hard gates for all implementation phases.
 
 ---
 
@@ -26,9 +28,11 @@ Refs #1
 
 ## Open Questions
 
-<!-- Unresolved unknowns that may affect implementation. Move to ARCHITECTURE.md Design Decisions when resolved. -->
+1. **DPO vs GRPO** — DPO needs (prompt, chosen, rejected) triplets; GRPO needs reward scores across multiple candidates per prompt. The candidate synthesizer as spec'd produces one pair — DPO shape only. Does GRPO require a different synthesizer, or a wrapper that samples N completions? — open, resolves in Phase 0 (`docs/training-algorithm-tradeoffs.md`)
 
-1. [question] — [status: open / resolved in Phase N]
+2. **Positive signal path success criterion** — Absence of negative feedback ≠ success (operator may not engage). Options: no-correction window + oracle quality score; explicit operator "approve session" signal; oracle-only (unattended). Tradeoffs: trust level, buffer pollution risk, operator burden. — open, resolves in Phase 0 (`docs/positive-signal-path.md`)
+
+3. **Attribution across session resets** — If feedback arrives after a session reset (history wiped), the turn context is gone and attribution fails. Fallback options depend on what OpenClaw persists across resets. — open, resolves in Phase 0 (`docs/openclaw-primitives.md`)
 
 ---
 
