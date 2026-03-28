@@ -30,7 +30,7 @@ Refs #3
 
 ### Tasks
 
-- [ ] Verify subagent spawn method: `openclaw gateway call --list` → update `docs/openclaw-subagent-api.md`
+- [x] Verify subagent spawn method: `openclaw gateway call --list` → update `docs/openclaw-subagent-api.md`
 - [ ] `tests/feedback_capture/test_hooks.py`
   - `message_received` hook fires and event contains `from`, `content`, `conversationId`, `timestamp`
   - `after_tool_call` hook fires and event contains `toolName`, `params`, `result`, `agentId`, `sessionKey`
@@ -128,7 +128,7 @@ Refs #5
 
 3. **Attribution across session resets** — resolved in Phase 0. `origin` field survives reset (contains `from`, `surface`, `threadId`). Archived transcripts preserved at `{sessionFile}.reset.{ISO-timestamp}`. Attribution recoverable via origin match + archived transcript traversal. See `docs/openclaw-primitives.md`.
 
-4. **Subagent spawn method** — open. `spawnedBy` field confirmed in SessionEntry but spawn method name/params unverified from source. Must confirm via `openclaw gateway call --list` before implementing Phase 1 plugin. See `docs/openclaw-subagent-api.md`.
+4. **Subagent spawn method** — resolved. Method is `agent` with `spawnedBy` param. Output via `--expect-final` flag or transcript read. See `docs/openclaw-subagent-api.md`.
 
 ---
 
