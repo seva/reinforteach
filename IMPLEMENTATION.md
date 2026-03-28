@@ -8,13 +8,13 @@ Must complete before writing implementation code that depends on external interf
 
 Refs #1
 
-- [ ] OpenClaw hooks: read source and trace `onMessage` / `onToolCall` hook payloads — document schema in `docs/openclaw-hooks.md`
-- [ ] OpenClaw primitives: document what session history and tool call log data is exposed to subagents — `docs/openclaw-primitives.md`
-- [ ] Subagent spawn API: document how to invoke a subagent, pass context, and receive output — `docs/openclaw-subagent-api.md`
+- [x] OpenClaw hooks: read source and trace `onMessage` / `onToolCall` hook payloads — document schema in `docs/openclaw-hooks.md`
+- [x] OpenClaw primitives: document what session history and tool call log data is exposed to subagents — `docs/openclaw-primitives.md`
+- [x] Subagent spawn API: document how to invoke a subagent, pass context, and receive output — `docs/openclaw-subagent-api.md`
 - [x] llama.cpp server API: document model-swap and inference endpoints — `docs/llamacpp-api.md`
 - [x] Unsloth training interface: document DPO and GRPO CLI args, dataset format (jsonl fields), and output artifacts — `docs/unsloth-training.md`
 - [x] DPO vs GRPO: document data shape requirements for each; evaluate whether the candidate synthesizer can produce both or requires a branch; record tradeoffs — `docs/training-algorithm-tradeoffs.md`
-- [ ] Positive signal path: define and evaluate "successful session" criterion options (no-correction window, oracle quality score, explicit operator flag); document tradeoffs — `docs/positive-signal-path.md`
+- [x] Positive signal path: define and evaluate "successful session" criterion options (no-correction window, oracle quality score, explicit operator flag); document tradeoffs — `docs/positive-signal-path.md`
 
 **Outputs:** seven discovery docs in `docs/` — hard gates for all implementation phases.
 
@@ -28,11 +28,13 @@ Refs #1
 
 ## Open Questions
 
-1. **DPO vs GRPO** — DPO needs (prompt, chosen, rejected) triplets; GRPO needs reward scores across multiple candidates per prompt. The candidate synthesizer as spec'd produces one pair — DPO shape only. Does GRPO require a different synthesizer, or a wrapper that samples N completions? — open, resolves in Phase 0 (`docs/training-algorithm-tradeoffs.md`)
+1. **DPO vs GRPO** — resolved in Phase 0. DPO for Phase 1: candidate synthesizer maps directly to DPO format; oracle at collection time. GRPO deferred (requires live oracle at training time + vLLM). See `docs/training-algorithm-tradeoffs.md`.
 
-2. **Positive signal path success criterion** — Absence of negative feedback ≠ success (operator may not engage). Options: no-correction window + oracle quality score; explicit operator "approve session" signal; oracle-only (unattended). Tradeoffs: trust level, buffer pollution risk, operator burden. — open, resolves in Phase 0 (`docs/positive-signal-path.md`)
+2. **Positive signal path success criterion** — resolved in Phase 0. Explicit operator positive signal, same pipeline with inverted chosen/rejected. No unattended path in v1. See `docs/positive-signal-path.md`.
 
-3. **Attribution across session resets** — If feedback arrives after a session reset (history wiped), the turn context is gone and attribution fails. Fallback options depend on what OpenClaw persists across resets. — open, resolves in Phase 0 (`docs/openclaw-primitives.md`)
+3. **Attribution across session resets** — resolved in Phase 0. `origin` field survives reset (contains `from`, `surface`, `threadId`). Archived transcripts preserved at `{sessionFile}.reset.{ISO-timestamp}`. Attribution recoverable via origin match + archived transcript traversal. See `docs/openclaw-primitives.md`.
+
+4. **Subagent spawn method** — open. `spawnedBy` field confirmed in SessionEntry but spawn method name/params unverified from source. Must confirm via `openclaw gateway call --list` before implementing Phase 1 plugin. See `docs/openclaw-subagent-api.md`.
 
 ---
 

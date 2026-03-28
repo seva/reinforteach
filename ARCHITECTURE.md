@@ -41,24 +41,25 @@ Candidate Synthesizer  (subagent) ◄─── Oracle  (frozen, higher-capabilit
 Confirmation Handler
   │  operator approves / rejects / edits  (same channel as feedback)
   │
-  ├─── negative signal: confirmed candidate → Training Buffer (jsonl)
+  ├─── negative signal: confirmed candidate (chosen=oracle, rejected=agent) → Training Buffer
   │
-  └─── positive signal path: TBD (see Open Question #2)
-         │
-         ▼
-       Training Buffer (jsonl)
-            │  trigger: N candidates OR time window
-            ▼
-       Training Scheduler  (cron)
-            │
-            ▼
-       Unsloth  (DPO or GRPO — see Open Question #1)
-            │  fine-tuned model artifact
-            ▼
-       Deployment Gate  (delta eval on held-out buffer)
-            │  deploy only if delta ≥ 0
-            ▼
-       llama.cpp server  (model swap)
+  └─── positive signal: operator sends "good" / positive reaction
+         → same pipeline, inverted roles (chosen=agent, rejected=oracle-degraded)
+         → confirmed candidate → Training Buffer
+                    │
+                    │  (jsonl: prompt, chosen, rejected — DPO format)
+                    │  trigger: N candidates OR time window
+                    ▼
+             Training Scheduler  (cron)
+                    │
+                    ▼
+             Unsloth DPO  (LoRA adapter output)
+                    │  adapter_model.safetensors
+                    ▼
+             Deployment Gate  (delta eval on held-out buffer — deploy only if delta ≥ 0)
+                    │
+                    ▼
+             llama.cpp  POST /lora-adapters  (hot-swap, no model reload)
 ```
 
 ---
@@ -87,8 +88,8 @@ Confirmation Handler
 | Oracle capability constraint | Oracle must be strictly higher-capability than the model under training, and frozen during the training cycle | If oracle ≈ trained model, chosen completions degrade over training iterations, producing circular or regressing signal |
 | Deployment gate | Deploy only if delta eval on held-out buffer is ≥ 0 | Auto-deploying a regressing model silently degrades agent capability; the log alone is not a safeguard |
 | Training buffer lifecycle | Clear consumed candidates after each training run; held-out set is frozen at initialization and never trained on | Accumulating stale candidates distorts loss; a held-out set that is also trained on produces a meaningless eval |
-| DPO vs GRPO | TBD — resolves in Phase 0 | Data shape diverges at the candidate synthesizer; cannot finalize without Unsloth interface discovery |
-| Positive signal path mechanism | TBD — resolves in Phase 0 | Success criterion undefined; unattended path carries buffer pollution risk |
+| DPO for Phase 1; GRPO deferred | DPO | Candidate synthesizer produces (prompt, chosen, rejected) — DPO shape. GRPO requires live oracle as reward function at training time + vLLM; too heavy for v1. LoRA adapter output for both; hot-swap via `POST /lora-adapters` (no model reload). |
+| Positive signal path | Explicit operator positive signal; same pipeline, inverted chosen/rejected | No unattended buffer writes in v1. Passive no-correction window has high false-positive risk. Oracle quality gate viable as Phase 2 throughput supplement once pipeline is validated. |
 
 ---
 
