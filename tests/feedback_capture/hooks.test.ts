@@ -3,6 +3,7 @@ import {
   handleMessageReceived,
   handleAfterToolCall,
 } from "../../src/plugin/feedback_capture.js";
+import { ValidationError } from "../../src/errors.js";
 
 describe("handleMessageReceived", () => {
   it("produces a message FeedbackEvent with all core fields", () => {
@@ -56,6 +57,18 @@ describe("handleMessageReceived", () => {
     );
 
     expect(result).not.toHaveProperty("extra");
+  });
+
+  it("throws ValidationError when from is missing", () => {
+    expect(() =>
+      handleMessageReceived({ content: "hi" } as never, { channelId: "telegram" }),
+    ).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when content is missing", () => {
+    expect(() =>
+      handleMessageReceived({ from: "seva" } as never, { channelId: "telegram" }),
+    ).toThrow(ValidationError);
   });
 });
 
@@ -123,5 +136,23 @@ describe("handleAfterToolCall", () => {
 
     expect(result.timestamp).toBeGreaterThanOrEqual(before);
     expect(result.timestamp).toBeLessThanOrEqual(after);
+  });
+
+  it("throws ValidationError when toolName is missing", () => {
+    expect(() =>
+      handleAfterToolCall(
+        { params: {} } as never,
+        { agentId: "main", sessionKey: "agent:main:main", toolName: "bash" },
+      ),
+    ).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when params is missing", () => {
+    expect(() =>
+      handleAfterToolCall(
+        { toolName: "bash" } as never,
+        { agentId: "main", sessionKey: "agent:main:main", toolName: "bash" },
+      ),
+    ).toThrow(ValidationError);
   });
 });

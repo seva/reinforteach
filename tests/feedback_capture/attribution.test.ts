@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { attributeFeedback } from "../../src/attribution.js";
 import type { SessionEntry, TranscriptLine } from "../../src/attribution.js";
 import type { MessageFeedbackEvent, ToolCallFeedbackEvent } from "../../src/plugin/feedback_capture.js";
+import { ReadFailedError } from "../../src/errors.js";
 
 const makeTranscript = (count: number): TranscriptLine[] =>
   Array.from({ length: count }, (_, i) => ({
@@ -125,6 +126,29 @@ describe("attributeFeedback — session reset", () => {
     expect(result).not.toBeNull();
     expect(result!.contextWindow).toHaveLength(feedbackWindowTurns);
     expect(result!.contextWindow).toEqual(archivedTranscript.slice(-feedbackWindowTurns));
+  });
+});
+
+describe("attributeFeedback — I/O failure", () => {
+  it("returns null when readTranscript rejects (graceful degradation)", async () => {
+    const readTranscript = async (_path: string): Promise<TranscriptLine[]> => {
+      throw new ReadFailedError("disk read failed");
+    };
+
+    const event: MessageFeedbackEvent = {
+      kind: "message",
+      from: "seva",
+      content: "wrong",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [session],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).toBeNull();
   });
 });
 

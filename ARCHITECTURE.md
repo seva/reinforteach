@@ -70,8 +70,9 @@ _Last verified: 2026-03-28_
 
 | Component | Responsibility | Key interface |
 |---|---|---|
-| Feedback Capture | Intercepts `onMessage` / `onToolCall` events and emits raw feedback events with session snapshot | OpenClaw hook registration |
-| Attribution Engine | Correlates a feedback event to the agent turn(s) responsible using session window | `attribute(feedback_event) → (turn_id, context)` |
+| Feedback Capture | Intercepts `onMessage` / `onToolCall` events and emits raw feedback events with session snapshot | OpenClaw hook registration; throws `ValidationError` on malformed payloads |
+| Session Adapter | Maps raw OpenClaw `HostSession` schema to domain `SessionEntry`; derives `archivedTranscripts` via filesystem prefix scan | `toSessionEntry(host, listFiles) → SessionEntry` |
+| Attribution Engine | Correlates a feedback event to the agent turn(s) responsible using session window | `attributeFeedback(event, ctx) → AttributedFeedback \| null`; returns null on I/O failure |
 | Feedback Analyzer | Subagent: infers sentiment + magnitude, generates hypothesis, optionally consults oracle | Subagent invocation; returns structured analysis |
 | Candidate Synthesizer | Subagent: produces (prompt, rejected, chosen, reward) using oracle for chosen completion | Subagent invocation; returns DPO-shaped record |
 | Oracle | Frozen higher-capability subagent: generates correct completions and rates session quality | Subagent invocation (configured externally) |
@@ -81,7 +82,19 @@ _Last verified: 2026-03-28_
 | Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate(model) → delta` |
 | llama.cpp Adapter | Swaps active model on llama.cpp server | llama.cpp model-swap API |
 
-_Last verified: 2026-03-28_
+_Last verified: 2026-03-28 (updated post-audit)_
+
+---
+
+## Error Types
+
+| Type | Module | Meaning |
+|---|---|---|
+| `ValidationError` | `src/errors.ts` | Hook payload missing required fields or wrong type |
+| `ReadFailedError` | `src/errors.ts` | Transcript I/O failure (file missing, permission denied, parse error) |
+| `NotFoundError` | `src/errors.ts` | Requested resource does not exist |
+
+Pipeline degradation policy: `ValidationError` propagates (caller decides); `ReadFailedError` caught at attribution boundary → returns `null` (skip event, continue).
 
 ---
 
@@ -95,7 +108,7 @@ _Last verified: 2026-03-28_
 | DPO for Phase 1; GRPO deferred | DPO | Candidate synthesizer produces (prompt, chosen, rejected) — DPO shape. GRPO requires live oracle as reward function at training time + vLLM; too heavy for v1. LoRA adapter output for both; hot-swap via `POST /lora-adapters` (no model reload). |
 | Positive signal path | Explicit operator positive signal; same pipeline, inverted chosen/rejected | No unattended buffer writes in v1. Passive no-correction window has high false-positive risk. Oracle quality gate viable as Phase 2 throughput supplement once pipeline is validated. |
 
-_Last verified: 2026-03-28_
+_Last verified: 2026-03-28 (updated post-audit)_
 
 ---
 

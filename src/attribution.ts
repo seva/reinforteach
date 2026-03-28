@@ -1,4 +1,5 @@
 import type { FeedbackEvent } from "./plugin/feedback_capture.js";
+import { ReadFailedError } from "./errors.js";
 
 export interface TranscriptLine {
   message: {
@@ -42,7 +43,12 @@ export async function attributeFeedback(
   const session = findSession(event, sessions);
   if (!session) return null;
 
-  const transcript = await resolveTranscript(session, readTranscript);
+  let transcript: TranscriptLine[];
+  try {
+    transcript = await resolveTranscript(session, readTranscript);
+  } catch {
+    return null;
+  }
   const contextWindow = transcript.slice(-feedbackWindowTurns);
 
   return {

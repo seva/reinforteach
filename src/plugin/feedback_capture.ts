@@ -1,3 +1,5 @@
+import { ValidationError } from "../errors.js";
+
 export interface MessageFeedbackEvent {
   kind: "message";
   from: string;
@@ -49,10 +51,25 @@ interface ToolCallContext {
   toolName: string;
 }
 
+function validateMessageEvent(event: unknown): asserts event is MessageEvent {
+  if (!event || typeof event !== "object") throw new ValidationError("message event must be an object");
+  const e = event as Record<string, unknown>;
+  if (typeof e.from !== "string") throw new ValidationError("message event missing required field: from");
+  if (typeof e.content !== "string") throw new ValidationError("message event missing required field: content");
+}
+
+function validateToolCallEvent(event: unknown): asserts event is ToolCallEvent {
+  if (!event || typeof event !== "object") throw new ValidationError("tool_call event must be an object");
+  const e = event as Record<string, unknown>;
+  if (typeof e.toolName !== "string") throw new ValidationError("tool_call event missing required field: toolName");
+  if (!e.params || typeof e.params !== "object") throw new ValidationError("tool_call event missing required field: params");
+}
+
 export function handleMessageReceived(
-  event: MessageEvent,
+  event: unknown,
   context: MessageContext,
 ): MessageFeedbackEvent {
+  validateMessageEvent(event);
   return {
     kind: "message",
     from: event.from,
@@ -65,9 +82,10 @@ export function handleMessageReceived(
 }
 
 export function handleAfterToolCall(
-  event: ToolCallEvent,
+  event: unknown,
   context: ToolCallContext,
 ): ToolCallFeedbackEvent {
+  validateToolCallEvent(event);
   return {
     kind: "tool_call",
     toolName: event.toolName,
@@ -86,10 +104,10 @@ const plugin = {
   name: "Reinforteach",
   register(api: { on: (event: string, handler: (...args: unknown[]) => unknown) => void }) {
     api.on("message_received", (event: unknown, context: unknown) =>
-      handleMessageReceived(event as MessageEvent, context as MessageContext),
+      handleMessageReceived(event, context as MessageContext),
     );
     api.on("after_tool_call", (event: unknown, context: unknown) =>
-      handleAfterToolCall(event as ToolCallEvent, context as ToolCallContext),
+      handleAfterToolCall(event, context as ToolCallContext),
     );
   },
 };
