@@ -69,6 +69,10 @@ Discovery outputs (Phase 0) are hard prerequisites for implementation phases. No
 
 ## WaLRuS-DATA
 
+**W**ins · **L**earnings · **R**isks · **S**trategy — **D**ecisions · **A**lignment · **T**radeoffs · **A**lternatives
+
+The first four sections are backward-looking (what happened this session). The last four are structural (what was decided and why it stands).
+
 At the end of any session with meaningful scope (phase completion, audit, significant fixes), write a `docs/walrus-YYYY-MM-DD.md` using the template at `docs/walrus-TEMPLATE.md`.
 
 | Section | Content |
