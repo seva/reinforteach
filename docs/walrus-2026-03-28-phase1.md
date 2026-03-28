@@ -20,7 +20,7 @@ OpenClaw plugin with two pure handler functions separated from hook registration
 Session lookup strategy: tool_call events carry `sessionKey` directly; message events are matched by `origin.from`. Transcript resolution: reads active transcript first; if empty, falls back to most-recent entry in `archivedTranscripts[]` (post-reset path). Returns `{ feedbackEvent, sessionKey, contextWindow }` or `null` when no session matches.
 
 **`vitest.config.ts`**
-`include: ["tests/**/*.ts"]` — needed because Vitest's default include pattern is `*.{test,spec}.ts`, which excludes pytest-style `test_*.ts` filenames.
+Stub config kept for future use (coverage, reporters). Test files use Vitest default naming: `*.test.ts`.
 
 ---
 
@@ -45,7 +45,7 @@ Tool call events always carry `sessionKey` from the OpenClaw hook context. No or
 
 ## Surprises
 
-**Vitest include pattern** — the default glob `**/*.{test,spec}.ts` silently found zero files for `test_hooks.ts`. Vitest exited with code 1, no helpful message about why. Fixed with explicit `vitest.config.ts`. This will affect every test file in the project — all future test files follow the `test_*.ts` convention, so the config is correct as-is.
+**pytest-style naming was wrong for TS** — initially named files `test_hooks.ts` / `test_attribution.ts` (epistegrity artifact). Vitest silently found zero files; fixed by renaming to `hooks.test.ts` / `attribution.test.ts` and dropping the custom include pattern. All future TS test files use `*.test.ts`.
 
 ---
 
