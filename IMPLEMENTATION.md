@@ -102,10 +102,10 @@ Refs #5
   - Training run on synthetic buffer produces `adapter_model.safetensors` in output dir
   - Run fails cleanly (logged, no crash) when buffer has fewer than `min_candidates`
 - [x] `src/dpo_runner.py` — wraps Unsloth DPO training; reads `training_buffer.jsonl`; writes LoRA adapter to configured output dir
-- [ ] `tests/training/test_gguf_conversion.py`
+- [x] `tests/training/test_gguf_conversion.py`
   - `convert-lora-to-gguf.py` converts `adapter_model.safetensors` → `adapter.gguf`
   - Output file is valid GGUF (header check)
-- [ ] `src/gguf_converter.py` — shells out to `convert-lora-to-gguf.py`; validates output
+- [x] `src/gguf_converter.py` — shells out to `convert-lora-to-gguf.py`; validates output
 - [ ] `tests/training/test_deployment_gate.py`
   - Delta eval on held-out buffer returns a float
   - Gate passes (deploys) when delta ≥ 0
