@@ -133,10 +133,10 @@ Refs #6
   - Blocks (no deploy) when deployment gate delta < 0
   - Nonzero exit when dpo_runner fails (buffer too small)
 - [x] `src/train_and_deploy.py` — orchestration subprocess: chains dpo_runner → gguf_converter → deployment_gate; exit code 0 = deploy, 1 = block, 2 = error; JSON to stdout with `{adapter_path, delta, deploy}`
-- [ ] `tests/integration/scheduler_subprocess.test.ts`
+- [x] `tests/integration/scheduler_subprocess.test.ts`
   - `runTraining` spawns `train_and_deploy.py` with correct args
   - Resolves on exit code 0 or 1 (deploy/block); rejects on exit code 2 (error)
-- [ ] `src/training_scheduler.ts` — wire real `runTraining`: `child_process.spawn('python', ['src/train_and_deploy.py', ...args])`
+- [x] `src/training_scheduler.ts` — wire real `runTraining`: `child_process.spawn('python', ['src/train_and_deploy.py', ...args])`
 - [ ] `tests/integration/config_loader.test.ts`
   - Reads `adaptive_learning` block from fixture config file
   - Returns typed `AdaptiveLearningConfig` struct

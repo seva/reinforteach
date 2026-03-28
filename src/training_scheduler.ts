@@ -36,3 +36,61 @@ export function startCron(context: TrainingSchedulerContext, pollIntervalMs: num
   const id = setInterval(() => { void scheduler.tick(); }, pollIntervalMs);
   return () => clearInterval(id);
 }
+
+// --- Real runTraining wiring ---
+
+export interface TrainingRunConfig {
+  bufferPath: string;
+  heldOutPath: string;
+  outputDir: string;
+  modelPath: string;
+  minCandidates: number;
+  convertScript?: string;
+  scriptPath?: string;
+}
+
+export interface SubprocessResult {
+  exitCode: number;
+  stdout: string;
+}
+
+export async function spawnTrainAndDeploy(
+  config: TrainingRunConfig,
+  spawnProcess?: (args: string[]) => Promise<SubprocessResult>,
+): Promise<void> {
+  if (spawnProcess === undefined) {
+    // Untestable path — real subprocess. Acceptable gap (see ARCHITECTURE.md Coverage Notes).
+    const { spawn } = await import("node:child_process");
+    spawnProcess = (args) =>
+      new Promise((resolve, reject) => {
+        let stdout = "";
+        const child = spawn(args[0], args.slice(1), { stdio: ["ignore", "pipe", "inherit"] });
+        child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
+        child.on("close", (code) => resolve({ exitCode: code ?? 2, stdout }));
+        child.on("error", reject);
+      });
+  }
+
+  const script = config.scriptPath ?? "src/train_and_deploy.py";
+  const args = [
+    "python", script,
+    "--buffer", config.bufferPath,
+    "--held-out", config.heldOutPath,
+    "--output-dir", config.outputDir,
+    "--model", config.modelPath,
+    "--min-candidates", String(config.minCandidates),
+  ];
+  if (config.convertScript) args.push("--convert-script", config.convertScript);
+
+  const { exitCode, stdout } = await spawnProcess(args);
+
+  if (exitCode === 0 || exitCode === 1) return; // deploy or block — not an error
+
+  // exit code 2: pipeline error
+  let message = `train_and_deploy.py exited ${exitCode}`;
+  try {
+    const parsed = JSON.parse(stdout) as { error?: string };
+    if (parsed.error) message = parsed.error;
+  } catch { /* stdout not JSON */ }
+  throw new Error(message);
+}

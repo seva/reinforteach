@@ -93,6 +93,7 @@ _Last verified: 2026-03-28 (updated post-audit)_
 | `src/errors.ts:12-14` | `NotFoundError` constructor | Acceptable — reserved for future use | No caller exists in Phases 1–2; will be covered when first thrown |
 | `src/plugin/feedback_capture.ts:106-112` | `plugin.register()` | Acceptable — subprocess-only path | Requires a live or mock OpenClaw API object; pure handlers are tested directly |
 | `src/training_scheduler.ts:startCron` | `startCron()` | Acceptable — subprocess-only path | `setInterval` + tick wiring; pure scheduler logic tested via `createScheduler` |
+| `src/training_scheduler.ts:spawnTrainAndDeploy (real spawnProcess)` | real subprocess branch | Acceptable — subprocess-only path | `child_process.spawn` wiring; subprocess contract tested via injected `spawnProcess` |
 | `src/deployment_gate.py:_default_scorer` | `_default_scorer()` | Acceptable — integration-only path | Requires live llama.cpp server; raises `NotImplementedError` to force injection |
 | `src/candidate_synthesizer.ts:59,68` | non-string content branches | Acceptable — rare multi-modal path | DPO pipeline uses string content; array/object content is valid OpenClaw schema but not exercised in v1 |
 
