@@ -54,26 +54,26 @@ Refs #4
 
 ### Tasks
 
-- [ ] `tests/candidate_pipeline/test_feedback_analyzer.ts`
+- [ ] `tests/candidate_pipeline/feedback_analyzer.test.ts`
   - Subagent invocation returns structured `{sentiment, magnitude, hypothesis, attributed_turn}`
   - Negative sentiment path: `sentiment < 0`, `magnitude > 0`
   - Positive sentiment path: `sentiment > 0`, inverted chosen/rejected roles documented
   - Low-confidence result (`magnitude < confidence_threshold`) is filtered before synthesizer
 - [ ] `src/feedback_analyzer.ts` — spawns Feedback Analyzer subagent with attributed context; parses and validates response
-- [ ] `tests/candidate_pipeline/test_candidate_synthesizer.ts`
+- [ ] `tests/candidate_pipeline/candidate_synthesizer.test.ts`
   - Negative path: `chosen` = oracle completion, `rejected` = original agent output
   - Positive path: `chosen` = original agent output, `rejected` = oracle-degraded version
   - `reward` = `sentiment × magnitude` (signed float)
   - Output matches DPO jsonl schema: `{prompt, chosen, rejected, reward}`
 - [ ] `src/candidate_synthesizer.ts` — spawns Candidate Synthesizer subagent with oracle; returns DPO-shaped candidate record
-- [ ] `tests/candidate_pipeline/test_confirmation.ts`
+- [ ] `tests/candidate_pipeline/confirmation.test.ts`
   - Confirmation message sent to originating channel with `hypothesis`, `chosen`, `rejected`
   - Operator approval → candidate passed to buffer
   - Operator rejection → candidate discarded, no buffer write
   - Operator edit → edited candidate passed to buffer
   - Timeout (no response) → candidate discarded
 - [ ] `src/confirmation_handler.ts` — sends candidate to operator channel; awaits response; routes to buffer or discard
-- [ ] `tests/candidate_pipeline/test_buffer.ts`
+- [ ] `tests/candidate_pipeline/buffer.test.ts`
   - Confirmed candidate appended as valid jsonl line
   - Candidate with `|reward| < confidence_threshold` rejected before append
   - First `N` candidates frozen as held-out set; subsequent writes go to training set only
@@ -92,7 +92,7 @@ Refs #5
 
 ### Tasks
 
-- [ ] `tests/training/test_scheduler.ts`
+- [ ] `tests/training/scheduler.test.ts`
   - Trigger fires when `len(training_set) >= min_candidates`
   - Trigger fires when `max_interval` elapsed regardless of buffer size
   - Trigger does not fire when both conditions unmet
@@ -111,7 +111,7 @@ Refs #5
   - Gate passes (deploys) when delta ≥ 0
   - Gate blocks (logs, no deploy) when delta < 0
 - [ ] `src/deployment_gate.py` — runs held-out eval against new adapter vs baseline; returns delta; gates deployment
-- [ ] `tests/training/test_deploy.ts`
+- [ ] `tests/training/deploy.test.ts`
   - `POST /lora-adapters` called with correct adapter id and scale
   - Successful swap logged; failed swap raises and logs without crashing pipeline
 - [ ] `src/lora_deployer.ts` — calls llama.cpp `POST /lora-adapters`; logs result; handles errors
