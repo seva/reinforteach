@@ -78,8 +78,8 @@ _Last verified: 2026-03-28_
 | Oracle | Frozen higher-capability subagent: generates correct completions and rates session quality | Subagent invocation (configured externally) |
 | Confirmation Handler | Presents hypothesis + candidate to operator; collects approval / rejection / edit | Feedback channel message round-trip |
 | Training Buffer | Persists confirmed candidates as jsonl; manages held-out set | Append-only write; read by Training Scheduler |
-| Training Scheduler | Cron: fires when buffer hits `min_candidates` or `max_interval`; invokes Unsloth | Cron trigger → Unsloth CLI |
-| Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate(model) → delta` |
+| Training Scheduler | Cron: fires when buffer hits `min_candidates` or `max_interval`; invokes Python training subprocess | `createScheduler(context) → { tick }`; `startCron(context, pollIntervalMs)` |
+| Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate_and_gate(config, scorer) → GateResult` |
 | llama.cpp Adapter | Swaps active model on llama.cpp server | llama.cpp model-swap API |
 
 _Last verified: 2026-03-28 (updated post-audit)_
@@ -104,8 +104,9 @@ _Last verified: 2026-03-28 (updated post-audit)_
 | `ValidationError` | `src/errors.ts` | Hook payload missing required fields or wrong type |
 | `ReadFailedError` | `src/errors.ts` | Transcript I/O failure (file missing, permission denied, parse error) |
 | `NotFoundError` | `src/errors.ts` | Requested resource does not exist |
+| `ConversionError` | `src/gguf_converter.py` | GGUF conversion failed: nonzero subprocess exit or invalid magic header |
 
-Pipeline degradation policy: `ValidationError` propagates (caller decides); `ReadFailedError` caught at attribution boundary → returns `null` (skip event, continue).
+Pipeline degradation policy: `ValidationError` propagates (caller decides); `ReadFailedError` caught at attribution boundary → returns `null` (skip event, continue); `ConversionError` propagates to training scheduler (training run aborted, no deployment).
 
 ---
 

@@ -134,8 +134,6 @@ Refs #5
 
 ## Dependencies
 
-<!-- Libraries, runtimes, or services this project requires. -->
+**TypeScript** (`package.json`): `vitest`, `@vitest/coverage-v8`, `@types/node`; peer dep `openclaw >=2026.3.11`
 
-```
-[paste your dependency manifest here — e.g. package.json, pyproject.toml, go.mod]
-```
+**Python** (`pyproject.toml`): `pytest >=7.0` (dev); runtime deps (`unsloth`, `trl`, `datasets`, `torch`) required at integration time — not in pyproject.toml until ML environment is pinned
