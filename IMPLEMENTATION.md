@@ -106,11 +106,11 @@ Refs #5
   - `convert-lora-to-gguf.py` converts `adapter_model.safetensors` → `adapter.gguf`
   - Output file is valid GGUF (header check)
 - [x] `src/gguf_converter.py` — shells out to `convert-lora-to-gguf.py`; validates output
-- [ ] `tests/training/test_deployment_gate.py`
+- [x] `tests/training/test_deployment_gate.py`
   - Delta eval on held-out buffer returns a float
   - Gate passes (deploys) when delta ≥ 0
   - Gate blocks (logs, no deploy) when delta < 0
-- [ ] `src/deployment_gate.py` — runs held-out eval against new adapter vs baseline; returns delta; gates deployment
+- [x] `src/deployment_gate.py` — runs held-out eval against new adapter vs baseline; returns delta; gates deployment
 - [ ] `tests/training/deploy.test.ts`
   - `POST /lora-adapters` called with correct adapter id and scale
   - Successful swap logged; failed swap raises and logs without crashing pipeline
