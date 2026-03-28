@@ -11,9 +11,9 @@ Refs #1
 - [ ] OpenClaw hooks: read source and trace `onMessage` / `onToolCall` hook payloads — document schema in `docs/openclaw-hooks.md`
 - [ ] OpenClaw primitives: document what session history and tool call log data is exposed to subagents — `docs/openclaw-primitives.md`
 - [ ] Subagent spawn API: document how to invoke a subagent, pass context, and receive output — `docs/openclaw-subagent-api.md`
-- [ ] llama.cpp server API: document model-swap and inference endpoints — `docs/llamacpp-api.md`
-- [ ] Unsloth training interface: document DPO and GRPO CLI args, dataset format (jsonl fields), and output artifacts — `docs/unsloth-training.md`
-- [ ] DPO vs GRPO: document data shape requirements for each; evaluate whether the candidate synthesizer can produce both or requires a branch; record tradeoffs — `docs/training-algorithm-tradeoffs.md`
+- [x] llama.cpp server API: document model-swap and inference endpoints — `docs/llamacpp-api.md`
+- [x] Unsloth training interface: document DPO and GRPO CLI args, dataset format (jsonl fields), and output artifacts — `docs/unsloth-training.md`
+- [x] DPO vs GRPO: document data shape requirements for each; evaluate whether the candidate synthesizer can produce both or requires a branch; record tradeoffs — `docs/training-algorithm-tradeoffs.md`
 - [ ] Positive signal path: define and evaluate "successful session" criterion options (no-correction window, oracle quality score, explicit operator flag); document tradeoffs — `docs/positive-signal-path.md`
 
 **Outputs:** seven discovery docs in `docs/` — hard gates for all implementation phases.
