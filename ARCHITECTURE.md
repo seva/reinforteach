@@ -85,7 +85,7 @@ Confirmation Handler
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Oracle capability constraint | Oracle must be strictly higher-capability than the model under training, and frozen during the training cycle | If oracle ≈ trained model, chosen completions degrade over training iterations, producing circular or regressing signal |
+| Oracle capability constraint | Oracle must produce completions of strictly higher quality than the target behavior, and be frozen during the training cycle | DPO quality ceiling: the trained model cannot reliably surpass oracle quality. Oracle ≈ trained model → quality ceiling at current level, marginal/no gains, or degradation from low-contrast pairs. Not a theoretical DPO requirement but a practical floor. |
 | Deployment gate | Deploy only if delta eval on held-out buffer is ≥ 0 | Auto-deploying a regressing model silently degrades agent capability; the log alone is not a safeguard |
 | Training buffer lifecycle | Clear consumed candidates after each training run; held-out set is frozen at initialization and never trained on | Accumulating stale candidates distorts loss; a held-out set that is also trained on produces a meaningless eval |
 | DPO for Phase 1; GRPO deferred | DPO | Candidate synthesizer produces (prompt, chosen, rejected) — DPO shape. GRPO requires live oracle as reward function at training time + vLLM; too heavy for v1. LoRA adapter output for both; hot-swap via `POST /lora-adapters` (no model reload). |

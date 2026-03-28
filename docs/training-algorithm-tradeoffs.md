@@ -28,7 +28,10 @@ operator feedback
   → training run reads buffer, trains on static preferences
 ```
 
-The `reward` field (`sentiment × magnitude`) doesn't directly feed DPO training (DPO uses `beta` to scale preference strength, not per-sample weights). It can be used for **candidate filtering** (reject low-confidence pairs before training) but is not a required DPO input.
+The `reward` field (`sentiment × magnitude`) is **not consumed by the DPO trainer** — DPO uses a global `beta` parameter to scale preference strength, not per-sample weights. Its practical uses in this pipeline:
+- **Candidate filtering gate:** reject pairs where `reward < confidence_threshold` before adding to buffer (higher-signal buffer = better training)
+- **Held-out stratification:** ensure held-out set covers the full reward range, not just high-confidence pairs
+- **Future:** reward-weighted DPO variants (e.g., SimPO, Cal-DPO) can use per-sample margins — the field preserves this option without requiring it now
 
 ### Tradeoffs
 

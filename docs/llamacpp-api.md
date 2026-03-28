@@ -27,12 +27,33 @@ llama-server \
 
 ### LoRA adapter hot-swap (preferred deployment path)
 
+Start server with `--lora-init-without-apply` to pre-load adapters without applying them:
+```
+llama-server -m base.gguf --lora-init-without-apply --lora adapter.gguf
+```
+
+Then activate/swap at runtime:
 ```json
 POST /lora-adapters
 [{"id": 0, "scale": 1.0}]
 ```
 
 Set `scale` to `0` to disable an adapter without unloading it. **This is lighter than a full model swap** — no model reload, instant effect.
+
+Per-request override (preferred for concurrent use — avoids global state conflicts):
+```json
+POST /completion
+{"prompt": "...", "lora": [{"id": 0, "scale": 1.0}]}
+```
+
+### LoRA format requirement
+
+**llama.cpp requires GGUF-format LoRA adapters.** Unsloth's `model.save_lora()` outputs `adapter_model.safetensors` — this must be converted before use:
+```
+python llama.cpp/convert-lora-to-gguf.py adapter_dir/ --outfile adapter.gguf
+```
+
+This conversion step is required in the deployment pipeline between Unsloth training and llama.cpp hot-swap.
 
 ### POST /completion (key fields)
 
