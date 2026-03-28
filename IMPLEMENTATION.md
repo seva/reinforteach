@@ -73,12 +73,12 @@ Refs #4
   - Operator edit → edited candidate passed to buffer
   - Timeout (no response) → candidate discarded
 - [x] `src/confirmation_handler.ts` — sends candidate to operator channel; awaits response; routes to buffer or discard
-- [ ] `tests/candidate_pipeline/buffer.test.ts`
+- [x] `tests/candidate_pipeline/buffer.test.ts`
   - Confirmed candidate appended as valid jsonl line
   - Candidate with `|reward| < confidence_threshold` rejected before append
   - First `N` candidates frozen as held-out set; subsequent writes go to training set only
   - Buffer read returns training set only (not held-out)
-- [ ] `src/training_buffer.ts` — append-only jsonl store; enforces `confidence_threshold` gate; manages held-out set initialization
+- [x] `src/training_buffer.ts` — append-only jsonl store; enforces `confidence_threshold` gate; manages held-out set initialization
 
 **Verification:** Send a test correction message → pipeline produces a confirmed DPO record in `training_buffer.jsonl`. Held-out set initialized with first N candidates. All tests pass.
 
