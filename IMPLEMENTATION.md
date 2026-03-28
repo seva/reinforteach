@@ -98,10 +98,10 @@ Refs #5
   - Trigger does not fire when both conditions unmet
   - Re-entrancy guard: second trigger while training in progress is a no-op
 - [x] `src/training_scheduler.ts` — cron-based trigger; evaluates buffer conditions; invokes Python training subprocess; re-entrancy guard
-- [ ] `tests/training/test_dpo_runner.py`
+- [x] `tests/training/test_dpo_runner.py`
   - Training run on synthetic buffer produces `adapter_model.safetensors` in output dir
   - Run fails cleanly (logged, no crash) when buffer has fewer than `min_candidates`
-- [ ] `src/dpo_runner.py` — wraps Unsloth DPO training; reads `training_buffer.jsonl`; writes LoRA adapter to configured output dir
+- [x] `src/dpo_runner.py` — wraps Unsloth DPO training; reads `training_buffer.jsonl`; writes LoRA adapter to configured output dir
 - [ ] `tests/training/test_gguf_conversion.py`
   - `convert-lora-to-gguf.py` converts `adapter_model.safetensors` → `adapter.gguf`
   - Output file is valid GGUF (header check)
