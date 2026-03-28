@@ -152,6 +152,59 @@ describe("attributeFeedback — I/O failure", () => {
   });
 });
 
+describe("attributeFeedback — tool_call without sessionKey", () => {
+  it("returns null when tool_call event has no sessionKey", async () => {
+    const readTranscript = async (_path: string) => makeTranscript(3);
+
+    const event: ToolCallFeedbackEvent = {
+      kind: "tool_call",
+      toolName: "bash",
+      params: { command: "ls" },
+      // sessionKey intentionally absent
+      agentId: "main",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [session],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).toBeNull();
+  });
+});
+
+describe("attributeFeedback — empty transcript, no archives", () => {
+  it("returns empty contextWindow when active transcript is empty and no archives exist", async () => {
+    const sessionWithNoArchives: SessionEntry = {
+      sessionId: "s1",
+      sessionKey: "agent:main:main",
+      sessionFile: "/fake/transcript.jsonl",
+      origin: { from: "seva", surface: "telegram" },
+      // archivedTranscripts absent
+    };
+
+    const readTranscript = async (_path: string) => [] as TranscriptLine[];
+
+    const event: MessageFeedbackEvent = {
+      kind: "message",
+      from: "seva",
+      content: "ok",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [sessionWithNoArchives],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.contextWindow).toEqual([]);
+  });
+});
+
 describe("attributeFeedback — no match", () => {
   it("returns null when no session matches the feedback sender", async () => {
     const readTranscript = async (_path: string) => [] as TranscriptLine[];
