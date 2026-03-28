@@ -54,12 +54,12 @@ Refs #4
 
 ### Tasks
 
-- [ ] `tests/candidate_pipeline/feedback_analyzer.test.ts`
+- [x] `tests/candidate_pipeline/feedback_analyzer.test.ts`
   - Subagent invocation returns structured `{sentiment, magnitude, hypothesis, attributed_turn}`
   - Negative sentiment path: `sentiment < 0`, `magnitude > 0`
   - Positive sentiment path: `sentiment > 0`, inverted chosen/rejected roles documented
   - Low-confidence result (`magnitude < confidence_threshold`) is filtered before synthesizer
-- [ ] `src/feedback_analyzer.ts` — spawns Feedback Analyzer subagent with attributed context; parses and validates response
+- [x] `src/feedback_analyzer.ts` — spawns Feedback Analyzer subagent with attributed context; parses and validates response
 - [ ] `tests/candidate_pipeline/candidate_synthesizer.test.ts`
   - Negative path: `chosen` = oracle completion, `rejected` = original agent output
   - Positive path: `chosen` = original agent output, `rejected` = oracle-degraded version
