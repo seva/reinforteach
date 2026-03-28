@@ -1,0 +1,44 @@
+{
+  "id": "reinforteach",
+  "name": "Reinforteach",
+  "version": "0.1.0",
+  "description": "Converts operator feedback on agent turns into DPO training signal for local models",
+  "kind": "enforcement",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable feedback capture and candidate pipeline"
+      },
+      "feedbackWindowTurns": {
+        "type": "number",
+        "default": 5,
+        "description": "Number of turns to search back when attributing feedback to an agent turn"
+      },
+      "confidenceThreshold": {
+        "type": "number",
+        "default": 0.7,
+        "description": "Minimum |sentiment × magnitude| to pass a candidate to the buffer"
+      },
+      "trainingTrigger": {
+        "type": "object",
+        "properties": {
+          "minCandidates": { "type": "number", "default": 20 },
+          "maxInterval": { "type": "string", "default": "7d" }
+        }
+      },
+      "modelPath": {
+        "type": "string",
+        "description": "Path to the .gguf model file being trained"
+      },
+      "oracleSubagent": {
+        "type": "string",
+        "description": "Agent ID of the oracle subagent used to generate chosen completions"
+      }
+    },
+    "required": []
+  }
+}

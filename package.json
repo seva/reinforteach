@@ -1,0 +1,27 @@
+{
+  "name": "reinforteach",
+  "version": "0.1.0",
+  "description": "RLHF-style pipeline converting operator feedback into DPO training signal for local models",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/plugin/feedback_capture.ts"
+    ]
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.11"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "vitest": "^3.0.0"
+  }
+}

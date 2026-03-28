@@ -1,0 +1,169 @@
+import { describe, it, expect } from "vitest";
+import { attributeFeedback } from "../../src/attribution.js";
+import type { SessionEntry, TranscriptLine } from "../../src/attribution.js";
+import type { MessageFeedbackEvent, ToolCallFeedbackEvent } from "../../src/plugin/feedback_capture.js";
+
+const makeTranscript = (count: number): TranscriptLine[] =>
+  Array.from({ length: count }, (_, i) => ({
+    message: {
+      role: i % 2 === 0 ? ("user" as const) : ("assistant" as const),
+      content: `turn ${i}`,
+    },
+  }));
+
+const session: SessionEntry = {
+  sessionId: "s1",
+  sessionKey: "agent:main:main",
+  sessionFile: "/fake/transcript.jsonl",
+  origin: { from: "seva", surface: "telegram", threadId: "954092305" },
+};
+
+const feedbackWindowTurns = 3;
+
+describe("attributeFeedback — active session", () => {
+  it("returns context window from the active transcript", async () => {
+    const transcript = makeTranscript(5);
+    const readTranscript = async (_path: string) => transcript;
+
+    const event: MessageFeedbackEvent = {
+      kind: "message",
+      from: "seva",
+      content: "That answer was wrong",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [session],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.sessionKey).toBe("agent:main:main");
+    expect(result!.contextWindow).toHaveLength(feedbackWindowTurns);
+    expect(result!.contextWindow).toEqual(transcript.slice(-feedbackWindowTurns));
+    expect(result!.feedbackEvent).toBe(event);
+  });
+
+  it("attributes a tool_call event by its sessionKey directly", async () => {
+    const transcript = makeTranscript(4);
+    const readTranscript = async (_path: string) => transcript;
+
+    const event: ToolCallFeedbackEvent = {
+      kind: "tool_call",
+      toolName: "bash",
+      params: { command: "ls" },
+      sessionKey: "agent:main:main",
+      agentId: "main",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [session],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.sessionKey).toBe("agent:main:main");
+    expect(result!.contextWindow).toHaveLength(feedbackWindowTurns);
+  });
+
+  it("returns fewer turns when transcript is shorter than feedbackWindowTurns", async () => {
+    const transcript = makeTranscript(2);
+    const readTranscript = async (_path: string) => transcript;
+
+    const event: MessageFeedbackEvent = {
+      kind: "message",
+      from: "seva",
+      content: "ok",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [session],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.contextWindow).toHaveLength(2);
+  });
+});
+
+describe("attributeFeedback — session reset", () => {
+  it("reads from archived transcript when session has been reset", async () => {
+    const archivedPath = "/fake/transcript.jsonl.reset.2026-03-28T00:00:00.000Z";
+    const archivedTranscript = makeTranscript(6);
+
+    const resetSession: SessionEntry = {
+      sessionId: "s2-after-reset",
+      sessionKey: "agent:main:main",
+      sessionFile: "/fake/transcript-new.jsonl",
+      origin: { from: "seva", surface: "telegram", threadId: "954092305" },
+      archivedTranscripts: [archivedPath],
+    };
+
+    const readTranscript = async (path: string) => {
+      if (path === archivedPath) return archivedTranscript;
+      return [] as TranscriptLine[];
+    };
+
+    const event: MessageFeedbackEvent = {
+      kind: "message",
+      from: "seva",
+      content: "That was still wrong",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [resetSession],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.contextWindow).toHaveLength(feedbackWindowTurns);
+    expect(result!.contextWindow).toEqual(archivedTranscript.slice(-feedbackWindowTurns));
+  });
+});
+
+describe("attributeFeedback — no match", () => {
+  it("returns null when no session matches the feedback sender", async () => {
+    const readTranscript = async (_path: string) => [] as TranscriptLine[];
+
+    const event: MessageFeedbackEvent = {
+      kind: "message",
+      from: "unknown-user",
+      content: "hello",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [session],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when sessions list is empty", async () => {
+    const readTranscript = async (_path: string) => [] as TranscriptLine[];
+
+    const event: MessageFeedbackEvent = {
+      kind: "message",
+      from: "seva",
+      content: "hello",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).toBeNull();
+  });
+});
