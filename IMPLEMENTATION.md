@@ -120,6 +120,33 @@ Refs #5
 
 ---
 
+## Phase 4 — Integration
+
+Refs #6
+
+**Goal:** Connect the subprocess chain and add config loading. Components pass unit tests; integration wiring is the remaining gap before live verification.
+
+### Tasks
+
+- [ ] `tests/integration/test_train_and_deploy.py`
+  - Full chain with synthetic buffer: produces `adapter.gguf`, returns deploy decision
+  - Blocks (no deploy) when deployment gate delta < 0
+  - Nonzero exit when dpo_runner fails (buffer too small)
+- [ ] `src/train_and_deploy.py` — orchestration subprocess: chains dpo_runner → gguf_converter → deployment_gate; exit code 0 = deploy, 1 = block, 2 = error; JSON to stdout with `{adapter_path, delta, deploy}`
+- [ ] `tests/integration/scheduler_subprocess.test.ts`
+  - `runTraining` spawns `train_and_deploy.py` with correct args
+  - Resolves on exit code 0 or 1 (deploy/block); rejects on exit code 2 (error)
+- [ ] `src/training_scheduler.ts` — wire real `runTraining`: `child_process.spawn('python', ['src/train_and_deploy.py', ...args])`
+- [ ] `tests/integration/config_loader.test.ts`
+  - Reads `adaptive_learning` block from fixture config file
+  - Returns typed `AdaptiveLearningConfig` struct
+  - Fails with clear error when required fields missing
+- [ ] `src/config_loader.ts` — reads per-agent `adaptive_learning` config from OpenClaw config file; typed; injectable path
+
+**Verification:** Seed buffer with synthetic candidates → invoke `train_and_deploy.py` directly → verify adapter produced + deploy decision in stdout. Scheduler integration test passes with subprocess mock. Config loader reads fixture config and returns typed struct.
+
+---
+
 ## Open Questions
 
 1. **DPO vs GRPO** — resolved in Phase 0. DPO for Phase 1: candidate synthesizer maps directly to DPO format; oracle at collection time. GRPO deferred (requires live oracle at training time + vLLM). See `docs/training-algorithm-tradeoffs.md`.
