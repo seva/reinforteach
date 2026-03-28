@@ -66,13 +66,13 @@ Refs #4
   - `reward` = `sentiment × magnitude` (signed float)
   - Output matches DPO jsonl schema: `{prompt, chosen, rejected, reward}`
 - [x] `src/candidate_synthesizer.ts` — spawns Candidate Synthesizer subagent with oracle; returns DPO-shaped candidate record
-- [ ] `tests/candidate_pipeline/confirmation.test.ts`
+- [x] `tests/candidate_pipeline/confirmation.test.ts`
   - Confirmation message sent to originating channel with `hypothesis`, `chosen`, `rejected`
   - Operator approval → candidate passed to buffer
   - Operator rejection → candidate discarded, no buffer write
   - Operator edit → edited candidate passed to buffer
   - Timeout (no response) → candidate discarded
-- [ ] `src/confirmation_handler.ts` — sends candidate to operator channel; awaits response; routes to buffer or discard
+- [x] `src/confirmation_handler.ts` — sends candidate to operator channel; awaits response; routes to buffer or discard
 - [ ] `tests/candidate_pipeline/buffer.test.ts`
   - Confirmed candidate appended as valid jsonl line
   - Candidate with `|reward| < confidence_threshold` rejected before append
