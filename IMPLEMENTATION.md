@@ -60,12 +60,12 @@ Refs #4
   - Positive sentiment path: `sentiment > 0`, inverted chosen/rejected roles documented
   - Low-confidence result (`magnitude < confidence_threshold`) is filtered before synthesizer
 - [x] `src/feedback_analyzer.ts` — spawns Feedback Analyzer subagent with attributed context; parses and validates response
-- [ ] `tests/candidate_pipeline/candidate_synthesizer.test.ts`
+- [x] `tests/candidate_pipeline/candidate_synthesizer.test.ts`
   - Negative path: `chosen` = oracle completion, `rejected` = original agent output
   - Positive path: `chosen` = original agent output, `rejected` = oracle-degraded version
   - `reward` = `sentiment × magnitude` (signed float)
   - Output matches DPO jsonl schema: `{prompt, chosen, rejected, reward}`
-- [ ] `src/candidate_synthesizer.ts` — spawns Candidate Synthesizer subagent with oracle; returns DPO-shaped candidate record
+- [x] `src/candidate_synthesizer.ts` — spawns Candidate Synthesizer subagent with oracle; returns DPO-shaped candidate record
 - [ ] `tests/candidate_pipeline/confirmation.test.ts`
   - Confirmation message sent to originating channel with `hypothesis`, `chosen`, `rejected`
   - Operator approval → candidate passed to buffer
