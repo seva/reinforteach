@@ -152,6 +152,29 @@ describe("attributeFeedback — I/O failure", () => {
   });
 });
 
+describe("attributeFeedback — tool_call sessionKey no match", () => {
+  it("returns null when tool_call sessionKey matches no session", async () => {
+    const readTranscript = async (_path: string) => makeTranscript(3);
+
+    const event: ToolCallFeedbackEvent = {
+      kind: "tool_call",
+      toolName: "bash",
+      params: { command: "ls" },
+      sessionKey: "agent:main:other",
+      agentId: "main",
+      timestamp: Date.now(),
+    };
+
+    const result = await attributeFeedback(event, {
+      sessions: [session],
+      readTranscript,
+      feedbackWindowTurns,
+    });
+
+    expect(result).toBeNull();
+  });
+});
+
 describe("attributeFeedback — tool_call without sessionKey", () => {
   it("returns null when tool_call event has no sessionKey", async () => {
     const readTranscript = async (_path: string) => makeTranscript(3);

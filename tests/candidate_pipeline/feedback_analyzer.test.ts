@@ -117,6 +117,22 @@ describe("analyzeFeedback — subagent response validation", () => {
     await expect(analyzeFeedback(attributed, ctx)).rejects.toThrow(ValidationError);
   });
 
+  it("throws ValidationError when attributed_turn field is missing", async () => {
+    const ctx = makeContext({ sentiment: -0.8, magnitude: 0.9, hypothesis: "h" });
+
+    await expect(analyzeFeedback(attributed, ctx)).rejects.toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when subagent returns valid JSON but not an object", async () => {
+    const ctx: FeedbackAnalyzerContext = {
+      spawnAgent: async () => "null",
+      confidenceThreshold: 0.7,
+      spawnedBy: "agent:main:main",
+    };
+
+    await expect(analyzeFeedback(attributed, ctx)).rejects.toThrow(ValidationError);
+  });
+
   it("propagates spawnAgent rejection without swallowing it", async () => {
     const ctx: FeedbackAnalyzerContext = {
       spawnAgent: async () => { throw new Error("gateway unavailable"); },
