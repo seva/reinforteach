@@ -137,11 +137,11 @@ Refs #6
   - `runTraining` spawns `train_and_deploy.py` with correct args
   - Resolves on exit code 0 or 1 (deploy/block); rejects on exit code 2 (error)
 - [x] `src/training_scheduler.ts` — wire real `runTraining`: `child_process.spawn('python', ['src/train_and_deploy.py', ...args])`
-- [ ] `tests/integration/config_loader.test.ts`
+- [x] `tests/integration/config_loader.test.ts`
   - Reads `adaptive_learning` block from fixture config file
   - Returns typed `AdaptiveLearningConfig` struct
   - Fails with clear error when required fields missing
-- [ ] `src/config_loader.ts` — reads per-agent `adaptive_learning` config from OpenClaw config file; typed; injectable path
+- [x] `src/config_loader.ts` — reads per-agent `adaptive_learning` config from OpenClaw config file; typed; injectable path
 
 **Verification:** Seed buffer with synthetic candidates → invoke `train_and_deploy.py` directly → verify adapter produced + deploy decision in stdout. Scheduler integration test passes with subprocess mock. Config loader reads fixture config and returns typed struct.
 

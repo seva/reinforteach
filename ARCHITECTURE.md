@@ -78,7 +78,8 @@ _Last verified: 2026-03-28_
 | Oracle | Frozen higher-capability subagent: generates correct completions and rates session quality | Subagent invocation (configured externally) |
 | Confirmation Handler | Presents hypothesis + candidate to operator; collects approval / rejection / edit | Feedback channel message round-trip |
 | Training Buffer | Persists confirmed candidates as jsonl; manages held-out set | Append-only write; read by Training Scheduler |
-| Training Scheduler | Cron: fires when buffer hits `min_candidates` or `max_interval`; invokes Python training subprocess | `createScheduler(context) → { tick }`; `startCron(context, pollIntervalMs)` |
+| Config Loader | Parses per-agent `adaptive_learning` config from OpenClaw config file; converts interval strings to ms | `loadConfig(rawJson) → AdaptiveLearningConfig`; throws `ValidationError` on malformed input |
+| Training Scheduler | Cron: fires when buffer hits `min_candidates` or `max_interval`; invokes Python training subprocess | `createScheduler(context) → { tick }`; `startCron(context, pollIntervalMs)`; `spawnTrainAndDeploy(config)` |
 | Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate_and_gate(config, scorer) → GateResult` |
 | llama.cpp Adapter | Swaps active model on llama.cpp server | llama.cpp model-swap API |
 
