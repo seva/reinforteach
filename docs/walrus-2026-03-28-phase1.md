@@ -1,61 +1,53 @@
-# WaLRuS — Phase 1: Feedback Capture & Attribution
-**Date:** 2026-03-28
-**Commit:** af7ed0f
-**Issue:** seva/reinforteach#3
+# WaLRuS-DATA — 2026-03-28
+
+Session scope: Phase 1 — Feedback Capture & Attribution complete; audit findings resolved; session adapter introduced.
 
 ---
 
-## What was built
+## Wins
 
-Two modules:
+- `src/plugin/feedback_capture.ts`: `handleMessageReceived` / `handleAfterToolCall` pure handlers with runtime validation; `ValidationError` on malformed payloads; OpenClaw hook registration
+- `src/attribution.ts`: `attributeFeedback` with injected `readTranscript`; session lookup by `origin.from` or `sessionKey`; archived transcript fallback for post-reset attribution; `ReadFailedError` caught → returns null
+- `src/errors.ts`: `ValidationError`, `ReadFailedError`, `NotFoundError` explicit error hierarchy
+- `src/session_adapter.ts`: `toSessionEntry(host, listFiles)` adapter isolating OpenClaw schema from domain type; derives `archivedTranscripts` via prefix scan; sorted oldest-first
+- `vitest.config.ts`: stub config; `*.test.ts` naming established
+- 26/26 tests green after audit fixes
 
-**`src/plugin/feedback_capture.ts`**
-OpenClaw plugin with two pure handler functions separated from hook registration for testability.
-- `handleMessageReceived(event, context) → MessageFeedbackEvent` — maps channel message to typed event; timestamp falls back to `Date.now()`; strips unknown fields; optional context fields (conversationId, accountId) passed through only when present
-- `handleAfterToolCall(event, context) → ToolCallFeedbackEvent` — maps tool execution result to typed event; captures error xor result; always sets timestamp to now
-- `export default { id, name, register(api) }` — OpenClaw plugin entry point
+## Learnings
 
-**`src/attribution.ts`**
-`attributeFeedback(event, context) → Promise<AttributedFeedback | null>`
-Session lookup strategy: tool_call events carry `sessionKey` directly; message events are matched by `origin.from`. Transcript resolution: reads active transcript first; if empty, falls back to most-recent entry in `archivedTranscripts[]` (post-reset path). Returns `{ feedbackEvent, sessionKey, contextWindow }` or `null` when no session matches.
+- pytest-style `test_*.ts` naming yields zero files in Vitest — default glob is `*.{test,spec}.ts`; silently exits with code 1
+- `as` casts in TypeScript event hooks are silent failure points at runtime — assertion functions (`asserts event is T`) needed at every hook ingress
+- `archivedTranscripts` field doesn't exist in OpenClaw's real `SessionEntry` schema — it's derived from filesystem glob on `{sessionFile}.reset.*` pattern
+- epistegrity IMPLEMENTATION.md template had test task order reversed (impl before test) and used `test_*.py` as a generic example — both corrected upstream
 
-**`vitest.config.ts`**
-Stub config kept for future use (coverage, reporters). Test files use Vitest default naming: `*.test.ts`.
+## Risks
 
----
+- Live capture verification not done — integration path (hook fires → `handleMessageReceived` → `attributeFeedback` → log entry) structurally sound but unverified end-to-end against a running gateway
+- `register()` in plugin untested — requires a mock or live OpenClaw API object; classified as Acceptable gap
 
-## Decisions made
+## Strategy
 
-**`readTranscript` injected, not imported**
-Attribution receives a `readTranscript: (path) => Promise<TranscriptLine[]>` function rather than importing `fs` directly. This keeps the module pure and testable without mocking Node built-ins.
+Phase 2 (Candidate Pipeline) begins with feedback analyzer. All Phase 2 modules inherit the injected-dependency pattern established here. Real I/O wrappers (OpenClaw gateway calls, `fs`) written at integration time — not in Phase 2.
 
-**Archive lookup uses last entry, not timestamp sort**
-`archivedTranscripts[]` is treated as ordered (earliest to latest); `slice(-1)[0]` gets the most recent. This avoids parsing ISO timestamps from filenames. If multi-reset traversal is needed in a later phase, the caller controls the array order.
+## Decisions
 
-**`sessionKey` direct-match for tool_call events**
-Tool call events always carry `sessionKey` from the OpenClaw hook context. No origin lookup needed — direct array find is O(n) and sufficient at this scale.
+- Pure handlers separated from hook registration: testable logic without gateway dependency
+- `readTranscript` injected rather than importing `fs`: no Node built-in mocking needed
+- `sessionKey` direct-match for tool_call events: already present in hook context; no origin lookup needed
+- Injected dependencies at every I/O boundary: established as project-wide convention
 
----
+## Alignment
 
-## What was NOT built
+- All I/O dependencies injected — no direct `fs` or gateway imports in testable modules
+- TypeScript test files named `*.test.ts`
+- Coverage as diagnostic: known acceptable gaps documented in `ARCHITECTURE.md` Coverage Notes
 
-**Live capture verification** — manual step; requires a running OpenClaw gateway. Test suite covers the pure logic. The integration path (hook fires → `handleMessageReceived` → `attributeFeedback` → log entry) is structurally sound but unverified end-to-end.
+## Tradeoffs
 
----
+- Injected deps over direct `fs` imports: fully testable without Node mocks — cost: real integration wrappers deferred to integration phase
+- Separating pure handlers from plugin registration: clean unit tests — cost: `register()` path untested; hook wiring verified only at live integration
 
-## Surprises
+## Alternatives
 
-**pytest-style naming was wrong for TS** — initially named files `test_hooks.ts` / `test_attribution.ts` (epistegrity artifact). Vitest silently found zero files; fixed by renaming to `hooks.test.ts` / `attribution.test.ts` and dropping the custom include pattern. All future TS test files use `*.test.ts`.
-
----
-
-## Phase 2 entry conditions
-
-All met:
-- `FeedbackEvent` type exported and stable
-- `AttributedFeedback` type exported
-- 14/14 tests green
-- Commit on main, pushed
-
-Next: Phase 2 — Candidate Pipeline (seva/reinforteach#4)
-First task: `tests/candidate_pipeline/test_feedback_analyzer.ts`
+- Mocking Node's `fs` module in tests: rejected — couples tests to implementation details; fragile under refactor
+- Testing `register()` with a mock OpenClaw API object: deferred — adds complexity without exercising meaningful logic; the pure handlers are the contract

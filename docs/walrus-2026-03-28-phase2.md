@@ -1,61 +1,54 @@
-# WaLRuS — Phase 2: Candidate Pipeline
-**Date:** 2026-03-28
-**Commit:** 5c4f707
-**Issue:** seva/reinforteach#4
+# WaLRuS-DATA — 2026-03-28
+
+Session scope: Phase 2 — Candidate Pipeline complete; all four modules built and tested.
 
 ---
 
-## What was built
+## Wins
 
-**`src/feedback_analyzer.ts`**
-`analyzeFeedback(attributed, ctx) → AnalysisResult | null`
-Spawns Feedback Analyzer subagent via injected `spawnAgent(params)`; constructs prompt from context window + feedback event; parses JSON response `{sentiment, magnitude, hypothesis, attributed_turn}`; validates all required fields; returns `null` when `magnitude < confidenceThreshold`.
+- `src/feedback_analyzer.ts`: `analyzeFeedback` spawns subagent via injected `spawnAgent`; validates JSON response `{sentiment, magnitude, hypothesis, attributed_turn}`; returns null below confidence threshold
+- `src/candidate_synthesizer.ts`: `synthesizeCandidate` coordinates oracle; negative path `chosen=oracle/rejected=agent`; positive path `chosen=agent/rejected=oracle-degraded`; `reward=sentiment×magnitude`; prompt excludes agent's evaluated turn
+- `src/confirmation_handler.ts`: `handleConfirmation` operator round-trip; approve/yes/+1 → buffer; reject/no/-1 → discard; free text → edit chosen; null → timeout; four-outcome discriminated union
+- `src/training_buffer.ts`: `appendToBuffer` confidence gate (`|reward| >= threshold`); first `heldOutSize` candidates → `held_out.jsonl`; subsequent → `training.jsonl`; `readTrainingSet` returns training only
+- 65/65 tests green
 
-**`src/candidate_synthesizer.ts`**
-`synthesizeCandidate(attributed, analysis, ctx) → DPOCandidate`
-Calls injected `spawnOracle` with different instructions depending on sentiment sign. Negative: oracle generates correct completion (`chosen=oracle, rejected=agent`). Positive: oracle generates degraded version (`chosen=agent, rejected=oracle`). `prompt` = context window excluding last assistant turn. `reward = sentiment × magnitude`.
+## Learnings
 
-**`src/confirmation_handler.ts`**
-`handleConfirmation(candidate, operatorId, hypothesis, ctx) → ConfirmationOutcome`
-Sends hypothesis + chosen + rejected to operator; awaits response with configurable timeout. Response routing: approve/yes/+1 → append original; reject/no/-1 → discard; any other text → edit chosen field, append edited; null timeout → discard. Returns discriminated union `{status: "approved" | "rejected" | "edited" | "timeout"}`.
-
-**`src/training_buffer.ts`**
-`appendToBuffer(candidate, ctx) → BufferWriteResult`
-Confidence gate: `|reward| < confidenceThreshold` → rejected. First `heldOutSize` candidates → `held_out.jsonl` (frozen); subsequent → `training.jsonl` only. `readTrainingSet` returns parsed candidates from training file — held-out never returned to callers.
-
----
-
-## Decisions made
-
-**All external dependencies injected**
-`spawnAgent`, `spawnOracle`, `sendMessage`, `awaitResponse`, `appendToBuffer` (in confirmation), `BufferStore` — every I/O boundary injected. Consistent with Phase 1 pattern (`readTranscript`). Real implementations are thin wrappers around OpenClaw gateway calls and `fs` operations — written at integration time.
-
-**Confirmation response parsing is keyword-based**
-Approval: `{approve, yes, +1}`. Rejection: `{reject, no, -1}`. Anything else = edit. Simple and predictable. Operator sends a corrected chosen completion as free text.
-
-**`reward` stored but not consumed by DPO trainer**
-Per discovery docs: DPO uses global `beta`, not per-sample weights. `reward` serves as: (1) confidence gate before buffer write, (2) held-out stratification metadata, (3) future compatibility with reward-weighted DPO variants.
-
-**`prompt` excludes agent's evaluated turn**
-DPO `prompt` = the context the model should respond to. Including the agent's own (rejected) response in the prompt would contaminate the preference signal.
-
----
+- DPO `prompt` must exclude the agent's evaluated turn — including it contaminates the preference signal (model sees its own rejected output as context)
+- Real LLM subagent output will contain prose, markdown fences, or reasoning prefixes around JSON — `JSON.parse` on raw output will throw `ValidationError`; a stripping step is needed before live use
+- DPO `reward` field is not consumed by the trainer (global `beta` only) — its value is: confidence gate before buffer write, held-out stratification, future reward-weighted DPO compatibility
 
 ## Risks
 
-**Real subagent output format** — all JSON parsing assumes the subagent returns well-formed JSON only. Real LLMs frequently add prose, markdown fences, or reasoning prefixes. The `parseAndValidate` in `feedback_analyzer.ts` will throw `ValidationError` on any non-JSON prefix. A stripping/extraction step may be needed before `JSON.parse` when live-tested.
+- Subagent JSON wrapping — `parseAndValidate` in `feedback_analyzer.ts` requires clean JSON; real model output needs a pre-parse stripping step (strip ` ```json `, leading prose, trailing commentary)
+- Edit response ambiguity — any non-keyword operator message treated as edit; an accidental follow-up question produces a nonsensical `chosen` in the buffer; needs live observation
+- Held-out set representativeness — frozen by insertion order; early candidates may be systematically lower-quality during pipeline tuning; no stratification in v1
 
-**Edit response ambiguity** — any message that isn't an approval/rejection keyword is treated as an edit. An operator accidentally sending a follow-up question would produce a nonsensical `chosen` in the buffer. Needs live observation before deciding if a more structured edit protocol is required.
+## Strategy
 
-**Held-out set ordering** — the held-out set is frozen by insertion order (first N confirmed candidates). If early candidates are systematically low-quality (e.g., early pipeline tuning), the held-out set may not be representative. No mitigation in v1.
+Phase 3 begins with training scheduler. Key handoff points from Phase 2: `readTrainingSet` (training scheduler reads candidates) and `held_out.jsonl` path (deployment gate evaluates against it). Python ML components (dpo_runner, gguf_converter, deployment_gate) are first new code not following the injected-TS pattern — subprocess boundary.
 
----
+## Decisions
 
-## Phase 3 entry conditions
+- Keyword-based confirmation parsing: approve/yes/+1, reject/no/-1, else=edit — simple and predictable
+- `reward` stored but not fed to DPO trainer — used as filter gate and future-proofing only
+- All external I/O injected: consistent with Phase 1; real implementations deferred to integration phase
+- `prompt` = context window minus last assistant turn
 
-All met:
-- `DPOCandidate` type exported and stable (`src/candidate_synthesizer.ts`)
-- `readTrainingSet` returns `DPOCandidate[]` — training scheduler can call this
-- `held_out.jsonl` populated by buffer — deployment gate can read it
-- 65/65 tests green
-- Commit on main, pushed
+## Alignment
+
+- Injected dependency pattern is the project standard; no module imports `fs` or calls OpenClaw gateway directly
+- Every subagent-facing function validates its response with `parseAndValidate` + `ValidationError`
+- Buffer is append-only; held-out set is never returned to callers
+
+## Tradeoffs
+
+- Keyword-based confirmation: low friction for operator — cost: any non-keyword response (including accidental messages) is silently treated as an edit
+- Confidence gate before buffer: clean high-signal buffer — cost: borderline candidates with correct sentiment but weak magnitude are discarded; buffer fills slower
+- Oracle at collection time (DPO): predictable cost, offline training — cost: if oracle improves after collection, old labels don't update; quality ceiling set at collection time
+
+## Alternatives
+
+- Structured edit format (e.g., `{edit: "..."} JSON`): rejected — too much operator friction; free text is more natural and handles the common case
+- Continuous reward signal in trainer (GRPO): deferred to later phase — requires live oracle at training time, vLLM, significantly heavier infrastructure
+- Per-sample reward weighting in DPO (SimPO/Cal-DPO): deferred — `reward` field preserves the option without requiring it now
