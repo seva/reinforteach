@@ -31,12 +31,12 @@ Refs #3
 ### Tasks
 
 - [x] Verify subagent spawn method: `openclaw gateway call --list` → update `docs/openclaw-subagent-api.md`
-- [x] `tests/feedback_capture/test_hooks.ts`
+- [x] `tests/feedback_capture/hooks.test.ts`
   - `message_received` handler produces `FeedbackEvent` with `from`, `content`, `conversationId`, `timestamp`
   - `after_tool_call` handler produces `FeedbackEvent` with `toolName`, `params`, `result`, `agentId`, `sessionKey`
   - Unknown/malformed event fields are dropped gracefully
 - [x] `src/plugin/feedback_capture.ts` — OpenClaw plugin registering `message_received` and `after_tool_call` hooks; emits structured `FeedbackEvent` with session snapshot
-- [x] `tests/feedback_capture/test_attribution.ts`
+- [x] `tests/feedback_capture/attribution.test.ts`
   - Feedback event attributed to correct turn in active session (by `sessionKey` + turn index within `feedback_window_turns`)
   - Attribution recovers correctly when session has been reset: uses `origin` match + archived transcript
   - Attribution fails gracefully (returns `null`) when no matching turn found
