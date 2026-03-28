@@ -6,33 +6,21 @@
 
 Must complete before writing implementation code that depends on external interfaces, APIs, or undocumented contracts.
 
-<!-- List the research tasks required to establish ground truth before building. Each task should produce a concrete, committed output in docs/. -->
+Refs #1
 
-- [ ] [research task — e.g. read source, trace requests, cross-reference references]
-- [ ] [record findings in `docs/[artifact].md` — this file is the hard gate for Phase N]
+- [ ] OpenClaw hooks: read source and trace `onMessage` / `onToolCall` hook payloads — document schema in `docs/openclaw-hooks.md`
+- [ ] OpenClaw primitives: document what session history and tool call log data is exposed to subagents — `docs/openclaw-primitives.md`
+- [ ] Subagent spawn API: document how to invoke a subagent, pass context, and receive output — `docs/openclaw-subagent-api.md`
+- [ ] llama.cpp server API: document model-swap and inference endpoints — `docs/llamacpp-api.md`
+- [ ] Unsloth training interface: document DPO and GRPO CLI args, dataset format (jsonl fields), and output artifacts — `docs/unsloth-training.md`
 
-**Outputs:** structured discovery artifact committed to `docs/`.
+**Outputs:** five discovery docs in `docs/` — hard gates for all implementation phases.
 
 ---
 
 ## Phase N — [Name]
 
-<!-- Replace N with phase number and give it a short goal-oriented name. -->
-
-**Goal:** [one sentence — what capability exists when this phase is complete]
-
-### Tasks
-
-<!-- Precede each implementation task with its test task. Done = verification statement is true. -->
-
-- [ ] `tests/[module]/test_[unit].py`
-  - [test case description]
-  - [test case description]
-- [ ] `[source file]`
-  - [implementation note]
-  - [implementation note]
-
-**Verification:** [concrete, observable statement that proves this phase is done — e.g. "X tests pass; live call returns Y"]
+<!-- Phases defined after Phase 0 discovery. Architecture and acceptance criteria per seva/reinforteach#1: "should be revisited once discovery is done." -->
 
 ---
 

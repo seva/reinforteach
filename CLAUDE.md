@@ -1,6 +1,6 @@
-# [Project Name]
+# reinforteach
 
-[One sentence: what this system does and how.]
+An RLHF-style pipeline that converts operator feedback on OpenClaw agent turns into DPO/GRPO training signal for local models running under OpenClaw.
 
 ## Session Start
 
