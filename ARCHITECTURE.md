@@ -90,8 +90,9 @@ _Last verified: 2026-03-28 (updated post-audit)_
 
 | File | Uncovered | Classification | Reason |
 |---|---|---|---|
-| `src/errors.ts:12-14` | `NotFoundError` constructor | Acceptable — unused until Phase 2 | No caller exists yet; will be covered when first used |
+| `src/errors.ts:12-14` | `NotFoundError` constructor | Acceptable — reserved for future use | No caller exists in Phases 1–2; will be covered when first thrown |
 | `src/plugin/feedback_capture.ts:106-112` | `plugin.register()` | Acceptable — subprocess-only path | Requires a live or mock OpenClaw API object; pure handlers are tested directly |
+| `src/training_scheduler.ts:startCron` | `startCron()` | Acceptable — subprocess-only path | `setInterval` + tick wiring; pure scheduler logic tested via `createScheduler` |
 
 ---
 
