@@ -86,6 +86,15 @@ _Last verified: 2026-03-28 (updated post-audit)_
 
 ---
 
+## Coverage Notes
+
+| File | Uncovered | Classification | Reason |
+|---|---|---|---|
+| `src/errors.ts:12-14` | `NotFoundError` constructor | Acceptable — unused until Phase 2 | No caller exists yet; will be covered when first used |
+| `src/plugin/feedback_capture.ts:106-112` | `plugin.register()` | Acceptable — subprocess-only path | Requires a live or mock OpenClaw API object; pure handlers are tested directly |
+
+---
+
 ## Error Types
 
 | Type | Module | Meaning |

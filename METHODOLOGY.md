@@ -97,6 +97,20 @@ Tests are written before implementation code. Done means tests pass, not code wr
 
 ---
 
+## Quality Signals
+
+When a measure becomes a target, it ceases to be a good measure. Optimizing for a metric produces the metric, not the thing the metric was meant to proxy.
+
+**Coverage as diagnostic, not target.** Coverage is never optimized for directly. After significant work, uncovered lines are reviewed and classified:
+- *Acceptable* — untestable path (browser automation, stdio transport, subprocess-only code). Document why.
+- *Gap* — missing behavior coverage. File an issue or add a test.
+
+The metric stays meaningful because it is never the goal.
+
+**Prefer signals that are hard to fake** — passing integration tests on real infrastructure, user-reported defects, deployment frequency — over signals that are easy to inflate.
+
+---
+
 ## What's Excluded and Why
 
 - **Session log** — redundant with issue comments; grows noisy.
