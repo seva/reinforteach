@@ -93,6 +93,20 @@ Confirmation Handler
 
 ---
 
+## Language Boundary
+
+| Layer | Language | Reason |
+|---|---|---|
+| OpenClaw plugin (hooks) | TypeScript | Forced — gateway plugin system is Node.js only |
+| Attribution, subagent invocation, confirmation, buffer, scheduler, deployer | TypeScript | Event-driven I/O-bound work; stays on the hot path; no language boundary per event |
+| DPO training, GGUF conversion, deployment gate eval | Python | Forced — Unsloth, PyTorch, HuggingFace ecosystem; no viable TS alternative |
+
+**Boundary:** `training_scheduler.ts` invokes `dpo_runner.py` as a subprocess. All ML artifacts (safetensors, GGUF) are files on disk — the handoff is a file path, not a function call.
+
+**Test frameworks:** Vitest (TypeScript); pytest (Python).
+
+---
+
 ## Constraints
 
 - OpenClaw session history and tool call log primitives only — no external data injection into the pipeline

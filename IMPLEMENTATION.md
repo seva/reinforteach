@@ -31,16 +31,16 @@ Refs #3
 ### Tasks
 
 - [x] Verify subagent spawn method: `openclaw gateway call --list` → update `docs/openclaw-subagent-api.md`
-- [ ] `tests/feedback_capture/test_hooks.py`
+- [ ] `src/plugin/feedback_capture.ts` — OpenClaw plugin registering `message_received` and `after_tool_call` hooks; emits structured `FeedbackEvent` with session snapshot
+- [ ] `tests/feedback_capture/test_hooks.ts`
   - `message_received` hook fires and event contains `from`, `content`, `conversationId`, `timestamp`
   - `after_tool_call` hook fires and event contains `toolName`, `params`, `result`, `agentId`, `sessionKey`
   - Plugin registration does not interfere with normal message/tool flow
-- [ ] `src/feedback_capture.py` — plugin registering `message_received` and `after_tool_call` hooks; emits structured `FeedbackEvent` with session snapshot
-- [ ] `tests/feedback_capture/test_attribution.py`
+- [ ] `src/attribution.ts` — correlates `FeedbackEvent` to `(turn_id, context_window)` using session transcript; handles reset via archive traversal
+- [ ] `tests/feedback_capture/test_attribution.ts`
   - Feedback event attributed to correct turn in active session (by `sessionKey` + turn index within `feedback_window_turns`)
   - Attribution recovers correctly when session has been reset: uses `origin` match + archived transcript
-  - Attribution fails gracefully (returns `None`) when no matching turn found
-- [ ] `src/attribution.py` — correlates `FeedbackEvent` to `(turn_id, context_window)` using session transcript; handles reset via archive traversal
+  - Attribution fails gracefully (returns `null`) when no matching turn found
 
 **Verification:** Given a live agent interaction and a subsequent feedback message on the same channel, the pipeline produces a `AttributedFeedback` record containing the attributed turn context and feedback event. Passes all tests. Confirmed via test suite and a manual live capture log entry.
 
@@ -54,31 +54,31 @@ Refs #4
 
 ### Tasks
 
-- [ ] `tests/candidate_pipeline/test_feedback_analyzer.py`
+- [ ] `src/feedback_analyzer.ts` — spawns Feedback Analyzer subagent with attributed context; parses and validates response
+- [ ] `tests/candidate_pipeline/test_feedback_analyzer.ts`
   - Subagent invocation returns structured `{sentiment, magnitude, hypothesis, attributed_turn}`
   - Negative sentiment path: `sentiment < 0`, `magnitude > 0`
   - Positive sentiment path: `sentiment > 0`, inverted chosen/rejected roles documented
   - Low-confidence result (`magnitude < confidence_threshold`) is filtered before synthesizer
-- [ ] `src/feedback_analyzer.py` — spawns Feedback Analyzer subagent with attributed context; parses and validates response
-- [ ] `tests/candidate_pipeline/test_candidate_synthesizer.py`
+- [ ] `src/candidate_synthesizer.ts` — spawns Candidate Synthesizer subagent with oracle; returns DPO-shaped candidate record
+- [ ] `tests/candidate_pipeline/test_candidate_synthesizer.ts`
   - Negative path: `chosen` = oracle completion, `rejected` = original agent output
   - Positive path: `chosen` = original agent output, `rejected` = oracle-degraded version
   - `reward` = `sentiment × magnitude` (signed float)
   - Output matches DPO jsonl schema: `{prompt, chosen, rejected, reward}`
-- [ ] `src/candidate_synthesizer.py` — spawns Candidate Synthesizer subagent with oracle; returns DPO-shaped candidate record
-- [ ] `tests/candidate_pipeline/test_confirmation.py`
+- [ ] `src/confirmation_handler.ts` — sends candidate to operator channel; awaits response; routes to buffer or discard
+- [ ] `tests/candidate_pipeline/test_confirmation.ts`
   - Confirmation message sent to originating channel with `hypothesis`, `chosen`, `rejected`
   - Operator approval → candidate passed to buffer
   - Operator rejection → candidate discarded, no buffer write
   - Operator edit → edited candidate passed to buffer
   - Timeout (no response) → candidate discarded
-- [ ] `src/confirmation_handler.py` — sends candidate to operator channel; awaits response; routes to buffer or discard
-- [ ] `tests/candidate_pipeline/test_buffer.py`
+- [ ] `src/training_buffer.ts` — append-only jsonl store; enforces `confidence_threshold` gate; manages held-out set initialization
+- [ ] `tests/candidate_pipeline/test_buffer.ts`
   - Confirmed candidate appended as valid jsonl line
   - Candidate with `|reward| < confidence_threshold` rejected before append
   - First `N` candidates frozen as held-out set; subsequent writes go to training set only
   - Buffer read returns training set only (not held-out)
-- [ ] `src/training_buffer.py` — append-only jsonl store; enforces `confidence_threshold` gate; manages held-out set initialization
 
 **Verification:** Send a test correction message → pipeline produces a confirmed DPO record in `training_buffer.jsonl`. Held-out set initialized with first N candidates. All tests pass.
 
@@ -92,29 +92,29 @@ Refs #5
 
 ### Tasks
 
-- [ ] `tests/training/test_scheduler.py`
+- [ ] `src/training_scheduler.ts` — cron-based trigger; evaluates buffer conditions; invokes Python training subprocess; re-entrancy guard
+- [ ] `tests/training/test_scheduler.ts`
   - Trigger fires when `len(training_set) >= min_candidates`
   - Trigger fires when `max_interval` elapsed regardless of buffer size
   - Trigger does not fire when both conditions unmet
   - Re-entrancy guard: second trigger while training in progress is a no-op
-- [ ] `src/training_scheduler.py` — cron-based trigger; evaluates buffer conditions; invokes training run; re-entrancy guard
+- [ ] `src/dpo_runner.py` — wraps Unsloth DPO training; reads `training_buffer.jsonl`; writes LoRA adapter to configured output dir
 - [ ] `tests/training/test_dpo_runner.py`
   - Training run on synthetic buffer produces `adapter_model.safetensors` in output dir
   - Run fails cleanly (logged, no crash) when buffer has fewer than `min_candidates`
-- [ ] `src/dpo_runner.py` — wraps Unsloth DPO training; reads `training_buffer.jsonl`; writes LoRA adapter to configured output dir
+- [ ] `src/gguf_converter.py` — shells out to `convert-lora-to-gguf.py`; validates output
 - [ ] `tests/training/test_gguf_conversion.py`
   - `convert-lora-to-gguf.py` converts `adapter_model.safetensors` → `adapter.gguf`
   - Output file is valid GGUF (header check)
-- [ ] `src/gguf_converter.py` — shells out to `convert-lora-to-gguf.py`; validates output
+- [ ] `src/deployment_gate.py` — runs held-out eval against new adapter vs baseline; returns delta; gates deployment
 - [ ] `tests/training/test_deployment_gate.py`
   - Delta eval on held-out buffer returns a float
   - Gate passes (deploys) when delta ≥ 0
   - Gate blocks (logs, no deploy) when delta < 0
-- [ ] `src/deployment_gate.py` — runs held-out eval against new adapter vs baseline; returns delta; gates deployment
-- [ ] `tests/training/test_deploy.py`
+- [ ] `src/lora_deployer.ts` — calls llama.cpp `POST /lora-adapters`; logs result; handles errors
+- [ ] `tests/training/test_deploy.ts`
   - `POST /lora-adapters` called with correct adapter id and scale
   - Successful swap logged; failed swap raises and logs without crashing pipeline
-- [ ] `src/lora_deployer.py` — calls llama.cpp `POST /lora-adapters`; logs result; handles errors
 
 **Verification:** Seed buffer with N synthetic DPO candidates; trigger training run; verify `adapter.gguf` produced; verify delta eval logged; verify adapter active on llama.cpp server (`GET /lora-adapters` confirms). All tests pass.
 
