@@ -62,6 +62,8 @@ Confirmation Handler
              llama.cpp  POST /lora-adapters  (hot-swap, no model reload)
 ```
 
+_Last verified: 2026-03-28_
+
 ---
 
 ## Components
@@ -79,6 +81,8 @@ Confirmation Handler
 | Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate(model) → delta` |
 | llama.cpp Adapter | Swaps active model on llama.cpp server | llama.cpp model-swap API |
 
+_Last verified: 2026-03-28_
+
 ---
 
 ## Design Decisions
@@ -90,6 +94,8 @@ Confirmation Handler
 | Training buffer lifecycle | Clear consumed candidates after each training run; held-out set is frozen at initialization and never trained on | Accumulating stale candidates distorts loss; a held-out set that is also trained on produces a meaningless eval |
 | DPO for Phase 1; GRPO deferred | DPO | Candidate synthesizer produces (prompt, chosen, rejected) — DPO shape. GRPO requires live oracle as reward function at training time + vLLM; too heavy for v1. LoRA adapter output for both; hot-swap via `POST /lora-adapters` (no model reload). |
 | Positive signal path | Explicit operator positive signal; same pipeline, inverted chosen/rejected | No unattended buffer writes in v1. Passive no-correction window has high false-positive risk. Oracle quality gate viable as Phase 2 throughput supplement once pipeline is validated. |
+
+_Last verified: 2026-03-28_
 
 ---
 
@@ -116,3 +122,5 @@ Confirmation Handler
 - Operator confirmation is required for all negative signal candidates
 - Deployment requires non-negative delta eval on a frozen held-out buffer
 - Per-agent configuration: `feedback_window_turns`, `confidence_threshold`, `training_trigger`, `model_path`, `oracle_subagent`
+
+_Last verified: 2026-03-28_

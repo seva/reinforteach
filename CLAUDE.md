@@ -5,9 +5,10 @@ An RLHF-style pipeline that converts operator feedback on OpenClaw agent turns i
 ## Session Start
 
 1. Read `METHODOLOGY.md`
-2. Scan `IMPLEMENTATION.md` checkboxes — first unchecked task is current state
-3. Check open GitHub issues for failures and decisions
-4. Search memory for relevant prior knowledge
+2. Read `ARCHITECTURE.md` — verify component descriptions match current code before acting
+3. Scan `IMPLEMENTATION.md` checkboxes — first unchecked task is current state
+4. Check open GitHub issues for failures and decisions
+5. Search memory for relevant prior knowledge
 
 ## Conventions
 

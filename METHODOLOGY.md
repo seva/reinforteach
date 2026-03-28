@@ -38,6 +38,7 @@ Rules:
 - Every phase completion is a commit
 - Do not batch unrelated changes into one commit
 - `IMPLEMENTATION.md` checkbox updates go in the same commit as the work they track
+- Any commit that changes a component's public contract (function signatures, error types, endpoints, CLI interface) must update the corresponding section of `ARCHITECTURE.md` in the same commit
 
 ---
 
