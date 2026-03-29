@@ -97,13 +97,14 @@ _Last verified: 2026-03-28 (updated Phase 5 — pipeline.ts added)_
 | `src/plugin/feedback_capture.ts:106-112` | `plugin.register()` | Acceptable — subprocess-only path | Requires a live or mock OpenClaw API object; pure handlers are tested directly |
 | `src/training_scheduler.ts:startCron` | `startCron()` | Acceptable — subprocess-only path | `setInterval` + tick wiring; pure scheduler logic tested via `createScheduler` |
 | `src/training_scheduler.ts:spawnTrainAndDeploy (real spawnProcess)` | real subprocess branch | Acceptable — subprocess-only path | `child_process.spawn` wiring; subprocess contract tested via injected `spawnProcess` |
-| `src/deployment_gate.py` (scorer=None branch) | `scorer = make_llama_scorer(config.model_path)` + lazy `from llama_cpp import Llama` inside scorer | Acceptable — integration-only path | Requires live llama-cpp-python + model; `make_llama_scorer` tested directly via injected `llama_factory` |
+| `src/deployment_gate.py:44-45` | lazy `from llama_cpp import Llama` import in `make_llama_scorer` | Acceptable — integration-only path | llama-cpp-python not present in test environment; `llama_factory` injected in all tests |
+| `src/deployment_gate.py:91` | `scorer = make_llama_scorer(config.model_path)` in `evaluate_and_gate` | Acceptable — integration-only path | Requires live llama-cpp-python + model; all tests inject a scorer |
 | `src/candidate_synthesizer.ts:59,68` | non-string content branches | Acceptable — rare multi-modal path | DPO pipeline uses string content; array/object content is valid OpenClaw schema but not exercised in v1 |
 | `src/dpo_runner.py:61-62,78-88` | lazy ML import blocks (`unsloth`, `trl`, `datasets`) | Acceptable — integration-only path | ML libraries not present in test environment; lazy imports allow importing module without GPU/torch |
 | `src/dpo_runner.py:108-119,131` | `main()` CLI entry point | Acceptable — subprocess-only path | `argparse` wiring; invoked as subprocess by training scheduler; CLI contract tested via `spawnTrainAndDeploy` |
 | `src/gguf_converter.py:44` | `run_subprocess = subprocess.run` | Acceptable — subprocess-only path | Real subprocess wiring; conversion contract tested via injected `run_subprocess` |
 | `src/train_and_deploy.py:62-65,76-79,82-85` | lazy import blocks for `trainer`, `converter`, `gater` | Acceptable — integration-only path | Production wiring requires `dpo_runner`, `gguf_converter`, `deployment_gate`; pipeline contract tested via injected callables |
-| `src/train_and_deploy.py:111-148,152` | `main()` CLI entry point | Acceptable — subprocess-only path | `argparse` + `sys.exit` wiring; subprocess contract tested via `spawnTrainAndDeploy` |
+| `src/train_and_deploy.py:115-152,156` | `main()` CLI entry point | Acceptable — subprocess-only path | `argparse` + `sys.exit` wiring; subprocess contract tested via `spawnTrainAndDeploy` |
 
 ---
 

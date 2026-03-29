@@ -142,3 +142,17 @@ class TestMakeLlamaScorer:
         result = scorer(None, [])
 
         assert result == pytest.approx(0.0)
+
+    def test_mean_response_logprob_returns_zero_when_response_has_no_tokens(self):
+        # If prompt+response tokenizes to exactly prompt_len tokens, response slice is empty → 0.0
+        # prompt="A B" (2 tokens), chosen="" → "A B" tokenizes to 2 tokens
+        # all_logprobs[2:] = [] → chosen_score = 0.0
+        # rejected="" same → rejected_score = 0.0; margin = 0.0
+        candidates = [{"prompt": "A B", "chosen": "", "rejected": "", "reward": 0.5}]
+        responses = {"A B": [-0.1, -0.2]}  # only prompt tokens
+
+        factory = make_mock_llama_factory(responses)
+        scorer = make_llama_scorer("/base.gguf", llama_factory=factory)
+        result = scorer(None, candidates)
+
+        assert result == pytest.approx(0.0)
