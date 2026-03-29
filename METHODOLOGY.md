@@ -67,6 +67,18 @@ Discovery outputs (Phase 0) are hard prerequisites for implementation phases. No
 
 ---
 
+## Post-Phase Audit
+
+After each phase completion, before writing the WaLRuS, audit the current project state against the constitution — `CLAUDE.md`, `METHODOLOGY.md`, `ARCHITECTURE.md`, `IMPLEMENTATION.md`.
+
+1. **ARCHITECTURE.md** — verify every component's key interface matches current code signatures
+2. **Coverage** — run coverage; classify uncovered lines as *Acceptable* (document why) or *Gap* (add test)
+3. **Cross-cutting** — scan for placeholder content, missing `.gitignore` entries, undocumented error types
+
+Gaps must be closed or classified before the WaLRuS is written. The audit is a gate, not a suggestion.
+
+---
+
 ## WaLRuS-DATA
 
 **W**ins · **L**earnings · **R**isks · **S**trategy — **D**ecisions · **A**lignment · **T**radeoffs · **A**lternatives
