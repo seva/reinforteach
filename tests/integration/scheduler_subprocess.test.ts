@@ -73,3 +73,27 @@ describe("spawnTrainAndDeploy — exit code handling", () => {
     await expect(spawnTrainAndDeploy(baseConfig, spawn)).rejects.toThrow();
   });
 });
+
+describe("spawnTrainAndDeploy — deploy callback", () => {
+  it("calls deploy with adapter_path on exit code 0", async () => {
+    const deploy = vi.fn().mockResolvedValue(undefined);
+    const stdout = JSON.stringify({ adapter_path: "out/adapter.gguf", delta: 0.1, deploy: true });
+    const spawn = makeSpawn(0, stdout);
+    await spawnTrainAndDeploy({ ...baseConfig, deploy }, spawn);
+    expect(deploy).toHaveBeenCalledOnce();
+    expect(deploy).toHaveBeenCalledWith("out/adapter.gguf");
+  });
+
+  it("does not call deploy on exit code 1 (gate blocked)", async () => {
+    const deploy = vi.fn();
+    const spawn = makeSpawn(1, JSON.stringify({ deploy: false, reason: "gate_blocked" }));
+    await spawnTrainAndDeploy({ ...baseConfig, deploy }, spawn);
+    expect(deploy).not.toHaveBeenCalled();
+  });
+
+  it("resolves without calling deploy when no deploy callback provided on exit 0", async () => {
+    const stdout = JSON.stringify({ adapter_path: "out/adapter.gguf", delta: 0.1, deploy: true });
+    const spawn = makeSpawn(0, stdout);
+    await expect(spawnTrainAndDeploy(baseConfig, spawn)).resolves.not.toThrow();
+  });
+});

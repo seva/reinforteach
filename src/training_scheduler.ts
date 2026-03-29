@@ -47,6 +47,7 @@ export interface TrainingRunConfig {
   minCandidates: number;
   convertScript?: string;
   scriptPath?: string;
+  deploy?: (adapterPath: string) => Promise<void>;
 }
 
 export interface SubprocessResult {
@@ -84,7 +85,16 @@ export async function spawnTrainAndDeploy(
 
   const { exitCode, stdout } = await spawnProcess(args);
 
-  if (exitCode === 0 || exitCode === 1) return; // deploy or block — not an error
+  if (exitCode === 0) {
+    if (config.deploy) {
+      try {
+        const result = JSON.parse(stdout) as { adapter_path?: string };
+        if (result.adapter_path) await config.deploy(result.adapter_path);
+      } catch { /* stdout not JSON or no adapter_path */ }
+    }
+    return;
+  }
+  if (exitCode === 1) return; // gate blocked — not an error
 
   // exit code 2: pipeline error
   let message = `train_and_deploy.py exited ${exitCode}`;

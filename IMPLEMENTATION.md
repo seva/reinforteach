@@ -171,6 +171,10 @@ Refs #7
   - Scorer with adapter path vs scorer with `None` (baseline) produce distinct scores
 - [x] `src/deployment_gate.py` `make_llama_scorer` — real scorer using llama-cpp-python; approach per `docs/llamacpp-scoring.md`
 - [x] `package.json` — `"openclaw": { "extensions": ["./src/plugin/feedback_capture.ts"] }` present; full wiring of hooks → `pipeline.ts` requires live OpenClaw sessions API (gated on live infra)
+- [x] `src/training_scheduler.ts` — `TrainingRunConfig.deploy?: (adapterPath: string) => Promise<void>`; `spawnTrainAndDeploy` calls `config.deploy(adapter_path)` on exit 0 if provided
+- [x] `tests/integration/scheduler_subprocess.test.ts` — 3 tests: deploy called with adapter_path on exit 0; not called on exit 1; resolves without callback on exit 0
+- [x] `src/plugin/feedback_capture.ts` — `PluginWireContext` + `createPlugin(context, handleEvent)`: `register()` calls `startScheduler()`, wires `message_received` → `handleEvent`, `after_tool_call` → `handleAfterToolCall` (not piped to pipeline)
+- [x] `tests/plugin/feedback_capture_wiring.test.ts` — 4 tests: startScheduler called on register; message_received piped to handleEvent with sessions/config/pipeline; getSessions called; after_tool_call not piped to handleEvent
 
 **Verification:** Load plugin in OpenClaw test agent; send synthetic feedback message; trace event through pipeline; verify `AttributedFeedback` logged and candidate appears in `training_buffer.jsonl`. Seed buffer; invoke `train_and_deploy.py` directly against live llama.cpp; verify adapter deployed (`GET /lora-adapters` confirms). All tests pass.
 

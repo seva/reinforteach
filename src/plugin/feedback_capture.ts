@@ -1,4 +1,7 @@
 import { ValidationError } from "../errors.js";
+import type { SessionEntry } from "../attribution.js";
+import type { AdaptiveLearningConfig } from "../config_loader.js";
+import type { PipelineContext } from "./pipeline.js";
 
 export interface MessageFeedbackEvent {
   kind: "message";
@@ -96,6 +99,34 @@ export function handleAfterToolCall(
     ...(event.durationMs !== undefined && { durationMs: event.durationMs }),
     ...(context.agentId !== undefined && { agentId: context.agentId }),
     ...(context.sessionKey !== undefined && { sessionKey: context.sessionKey }),
+  };
+}
+
+export interface PluginWireContext {
+  getSessions: () => Promise<SessionEntry[]>;
+  config: AdaptiveLearningConfig;
+  pipeline: PipelineContext;
+  startScheduler: () => void;
+}
+
+export function createPlugin(
+  context: PluginWireContext,
+  handleEvent: (event: FeedbackEvent, sessions: SessionEntry[], config: AdaptiveLearningConfig, ctx: PipelineContext) => Promise<void>,
+) {
+  return {
+    id: "reinforteach",
+    name: "Reinforteach",
+    register(api: { on: (event: string, handler: (...args: unknown[]) => unknown) => void }) {
+      context.startScheduler();
+      api.on("message_received", async (event: unknown, ctx: unknown) => {
+        const feedbackEvent = handleMessageReceived(event, ctx as MessageContext);
+        const sessions = await context.getSessions();
+        await handleEvent(feedbackEvent, sessions, context.config, context.pipeline);
+      });
+      api.on("after_tool_call", (event: unknown, ctx: unknown) =>
+        handleAfterToolCall(event, ctx as ToolCallContext),
+      );
+    },
   };
 }
 

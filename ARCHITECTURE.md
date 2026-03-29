@@ -70,7 +70,7 @@ _Last verified: 2026-03-28_
 
 | Component | Responsibility | Key interface |
 |---|---|---|
-| Feedback Capture | Intercepts `onMessage` / `onToolCall` events and emits raw feedback events with session snapshot | OpenClaw hook registration; throws `ValidationError` on malformed payloads |
+| Feedback Capture | Intercepts `onMessage` / `onToolCall` events and emits raw feedback events with session snapshot | OpenClaw hook registration; throws `ValidationError` on malformed payloads; `createPlugin(context, handleEvent)` for injectable wiring |
 | Session Adapter | Maps raw OpenClaw `HostSession` schema to domain `SessionEntry`; derives `archivedTranscripts` via filesystem prefix scan | `toSessionEntry(host, listFiles) → SessionEntry` |
 | Attribution Engine | Correlates a feedback event to the agent turn(s) responsible using session window | `attributeFeedback(event, ctx) → AttributedFeedback \| null`; returns null on I/O failure |
 | Feedback Analyzer | Subagent: infers sentiment + magnitude, generates hypothesis, optionally consults oracle | Subagent invocation; returns structured analysis |
@@ -80,11 +80,11 @@ _Last verified: 2026-03-28_
 | Training Buffer | Persists confirmed candidates as jsonl; manages held-out set | Append-only write; read by Training Scheduler |
 | Pipeline | Assembles full TS pipeline: attribution → analysis → synthesis → confirmation; entry point for OpenClaw hooks | `handleFeedbackEvent(event, sessions, config, context) → Promise<void>`; no-ops on tool_call events and attribution failures |
 | Config Loader | Parses per-agent `adaptive_learning` config from OpenClaw config file; converts interval strings to ms | `loadConfig(rawJson) → AdaptiveLearningConfig`; throws `ValidationError` on malformed input |
-| Training Scheduler | Cron: fires when buffer hits `min_candidates` or `max_interval`; invokes Python training subprocess | `createScheduler(context) → { tick }`; `startCron(context, pollIntervalMs)`; `spawnTrainAndDeploy(config)` |
+| Training Scheduler | Cron: fires when buffer hits `min_candidates` or `max_interval`; invokes Python training subprocess | `createScheduler(context) → { tick }`; `startCron(context, pollIntervalMs)`; `spawnTrainAndDeploy(config)` — `config.deploy?(adapterPath)` called on exit 0 |
 | Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate_and_gate(config, scorer) → GateResult`; `make_llama_scorer(model_path, llama_factory) → scorer` |
-| llama.cpp Adapter | Swaps active model on llama.cpp server | llama.cpp model-swap API |
+| llama.cpp Adapter | Swaps active model on llama.cpp server | `deployAdapter(params, context) → Promise<void>`; errors logged, no throw |
 
-_Last verified: 2026-03-28 (updated Phase 5 — pipeline.ts added)_
+_Last verified: 2026-03-28 (updated Phase 5 audit — createPlugin + deploy callback)_
 
 ---
 
@@ -94,7 +94,7 @@ _Last verified: 2026-03-28 (updated Phase 5 — pipeline.ts added)_
 |---|---|---|---|
 | `src/errors.ts:12-14` | `NotFoundError` constructor | Acceptable — reserved for future use | No caller exists in Phases 1–2; will be covered when first thrown |
 | `src/config_loader.ts:32-33` | unreachable throw in `parseIntervalMs` | Acceptable — genuinely unreachable | Regex `^(\d+)(d\|h\|m)$` enforces exhaustive switch; comment in source confirms |
-| `src/plugin/feedback_capture.ts:106-112` | `plugin.register()` | Acceptable — subprocess-only path | Requires a live or mock OpenClaw API object; pure handlers are tested directly |
+| `src/plugin/feedback_capture.ts:137-143` | `plugin.register()` (default export) | Acceptable — subprocess-only path | Requires a live or mock OpenClaw API object; pure handlers and `createPlugin` wiring are tested directly |
 | `src/training_scheduler.ts:startCron` | `startCron()` | Acceptable — subprocess-only path | `setInterval` + tick wiring; pure scheduler logic tested via `createScheduler` |
 | `src/training_scheduler.ts:spawnTrainAndDeploy (real spawnProcess)` | real subprocess branch | Acceptable — subprocess-only path | `child_process.spawn` wiring; subprocess contract tested via injected `spawnProcess` |
 | `src/deployment_gate.py:44-45` | lazy `from llama_cpp import Llama` import in `make_llama_scorer` | Acceptable — integration-only path | llama-cpp-python not present in test environment; `llama_factory` injected in all tests |
@@ -131,7 +131,7 @@ Pipeline degradation policy: `ValidationError` propagates (caller decides); `Rea
 | DPO for Phase 1; GRPO deferred | DPO | Candidate synthesizer produces (prompt, chosen, rejected) — DPO shape. GRPO requires live oracle as reward function at training time + vLLM; too heavy for v1. LoRA adapter output for both; hot-swap via `POST /lora-adapters` (no model reload). |
 | Positive signal path | Explicit operator positive signal; same pipeline, inverted chosen/rejected | No unattended buffer writes in v1. Passive no-correction window has high false-positive risk. Oracle quality gate viable as Phase 2 throughput supplement once pipeline is validated. |
 
-_Last verified: 2026-03-28 (updated post-audit)_
+_Last verified: 2026-03-28 (updated post-Phase-5 audit)_
 
 ---
 
