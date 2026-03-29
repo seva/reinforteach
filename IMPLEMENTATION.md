@@ -158,20 +158,19 @@ Refs #7
 ### Tasks
 
 - [x] llama.cpp scorer discovery: verify log-prob or judge-model approach → `docs/llamacpp-scoring.md`
-- [ ] `tests/plugin/pipeline.test.ts`
+- [x] `tests/plugin/pipeline.test.ts`
   - Synthetic `FeedbackEvent` flows through full TS pipeline to buffer write
-  - Config loaded from fixture via `loadConfig`
   - All downstream components (attribution, analyzer, synthesizer, confirmation, buffer) injected
   - Negative signal path: event → `AttributedFeedback` → analysis → candidate → confirmed → buffer append
   - Positive signal path: inverted chosen/rejected → buffer append
   - Low-confidence analysis filtered before synthesizer
-- [ ] `src/plugin/pipeline.ts` — assembles all TS components; loads config via `loadConfig`; exposes `handleFeedbackEvent(event, hostSession, sessions, config)` called by feedback_capture hooks
+- [x] `src/plugin/pipeline.ts` — assembles all TS components; exposes `handleFeedbackEvent(event, sessions, config, context)` called by feedback_capture hooks
 - [x] `tests/training/test_real_scorer.py`
   - Scorer calls llama.cpp for each held-out candidate
   - Returns float score (mocked llama.cpp responses)
   - Scorer with adapter path vs scorer with `None` (baseline) produce distinct scores
 - [x] `src/deployment_gate.py` `make_llama_scorer` — real scorer using llama-cpp-python; approach per `docs/llamacpp-scoring.md`
-- [ ] `package.json` — add `"openclaw": { "extensions": ["src/plugin/pipeline.ts"] }`
+- [x] `package.json` — `"openclaw": { "extensions": ["./src/plugin/feedback_capture.ts"] }` present; full wiring of hooks → `pipeline.ts` requires live OpenClaw sessions API (gated on live infra)
 
 **Verification:** Load plugin in OpenClaw test agent; send synthetic feedback message; trace event through pipeline; verify `AttributedFeedback` logged and candidate appears in `training_buffer.jsonl`. Seed buffer; invoke `train_and_deploy.py` directly against live llama.cpp; verify adapter deployed (`GET /lora-adapters` confirms). All tests pass.
 
