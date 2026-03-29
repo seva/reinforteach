@@ -82,7 +82,11 @@ def run_pipeline(
         from deployment_gate import evaluate_and_gate as _gate, GateConfig  # type: ignore[import]
 
         def gater(adapter_path: str, held_out_path: str) -> Any:
-            return _gate(GateConfig(held_out_path=held_out_path, adapter_path=adapter_path))
+            return _gate(GateConfig(
+                held_out_path=held_out_path,
+                adapter_path=adapter_path,
+                model_path=config.model_path,
+            ))
 
     # Step 1: Train
     trainer(config)

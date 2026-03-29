@@ -157,7 +157,7 @@ Refs #7
 
 ### Tasks
 
-- [ ] llama.cpp scorer discovery: verify log-prob or judge-model approach → `docs/llamacpp-scoring.md`
+- [x] llama.cpp scorer discovery: verify log-prob or judge-model approach → `docs/llamacpp-scoring.md`
 - [ ] `tests/plugin/pipeline.test.ts`
   - Synthetic `FeedbackEvent` flows through full TS pipeline to buffer write
   - Config loaded from fixture via `loadConfig`
@@ -166,11 +166,11 @@ Refs #7
   - Positive signal path: inverted chosen/rejected → buffer append
   - Low-confidence analysis filtered before synthesizer
 - [ ] `src/plugin/pipeline.ts` — assembles all TS components; loads config via `loadConfig`; exposes `handleFeedbackEvent(event, hostSession, sessions, config)` called by feedback_capture hooks
-- [ ] `tests/training/test_real_scorer.py`
+- [x] `tests/training/test_real_scorer.py`
   - Scorer calls llama.cpp for each held-out candidate
   - Returns float score (mocked llama.cpp responses)
   - Scorer with adapter path vs scorer with `None` (baseline) produce distinct scores
-- [ ] `src/deployment_gate.py` `_default_scorer` — real scorer using llama.cpp; approach per `docs/llamacpp-scoring.md`
+- [x] `src/deployment_gate.py` `make_llama_scorer` — real scorer using llama-cpp-python; approach per `docs/llamacpp-scoring.md`
 - [ ] `package.json` — add `"openclaw": { "extensions": ["src/plugin/pipeline.ts"] }`
 
 **Verification:** Load plugin in OpenClaw test agent; send synthetic feedback message; trace event through pipeline; verify `AttributedFeedback` logged and candidate appears in `training_buffer.jsonl`. Seed buffer; invoke `train_and_deploy.py` directly against live llama.cpp; verify adapter deployed (`GET /lora-adapters` confirms). All tests pass.
@@ -187,7 +187,7 @@ Refs #7
 
 4. **Subagent spawn method** — resolved. Method is `agent` with `spawnedBy` param. Output via `--expect-final` flag or transcript read. See `docs/openclaw-subagent-api.md`.
 
-5. **llama.cpp scoring approach** — open. `POST /completion` does not document log-prob output. Options: (a) `logprobs` parameter in newer builds; (b) judge-model (prompt model as judge, score by preference frequency). Must resolve before implementing `_default_scorer`. See `docs/llamacpp-scoring.md` (pending).
+5. **llama.cpp scoring approach** — resolved. Use llama-cpp-python with `logits_all=True`; HTTP server log-prob support is unreliable for prompt tokens. Score = mean(log_prob(chosen) - log_prob(rejected)) per candidate, normalised by token count. `GateConfig` needs `model_path`. See `docs/llamacpp-scoring.md`.
 
 ---
 

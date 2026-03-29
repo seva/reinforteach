@@ -80,10 +80,10 @@ _Last verified: 2026-03-28_
 | Training Buffer | Persists confirmed candidates as jsonl; manages held-out set | Append-only write; read by Training Scheduler |
 | Config Loader | Parses per-agent `adaptive_learning` config from OpenClaw config file; converts interval strings to ms | `loadConfig(rawJson) → AdaptiveLearningConfig`; throws `ValidationError` on malformed input |
 | Training Scheduler | Cron: fires when buffer hits `min_candidates` or `max_interval`; invokes Python training subprocess | `createScheduler(context) → { tick }`; `startCron(context, pollIntervalMs)`; `spawnTrainAndDeploy(config)` |
-| Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate_and_gate(config, scorer) → GateResult` |
+| Deployment Gate | Runs delta eval on held-out buffer; blocks deployment if delta < 0 | `evaluate_and_gate(config, scorer) → GateResult`; `make_llama_scorer(model_path, llama_factory) → scorer` |
 | llama.cpp Adapter | Swaps active model on llama.cpp server | llama.cpp model-swap API |
 
-_Last verified: 2026-03-28 (updated post-audit)_
+_Last verified: 2026-03-28 (updated Phase 5)_
 
 ---
 
@@ -96,7 +96,7 @@ _Last verified: 2026-03-28 (updated post-audit)_
 | `src/plugin/feedback_capture.ts:106-112` | `plugin.register()` | Acceptable — subprocess-only path | Requires a live or mock OpenClaw API object; pure handlers are tested directly |
 | `src/training_scheduler.ts:startCron` | `startCron()` | Acceptable — subprocess-only path | `setInterval` + tick wiring; pure scheduler logic tested via `createScheduler` |
 | `src/training_scheduler.ts:spawnTrainAndDeploy (real spawnProcess)` | real subprocess branch | Acceptable — subprocess-only path | `child_process.spawn` wiring; subprocess contract tested via injected `spawnProcess` |
-| `src/deployment_gate.py:46,87` | `scorer = _default_scorer` assignment + `_default_scorer()` body | Acceptable — integration-only path | Requires live llama.cpp server; raises `NotImplementedError` to force injection |
+| `src/deployment_gate.py` (scorer=None branch) | `scorer = make_llama_scorer(config.model_path)` + lazy `from llama_cpp import Llama` inside scorer | Acceptable — integration-only path | Requires live llama-cpp-python + model; `make_llama_scorer` tested directly via injected `llama_factory` |
 | `src/candidate_synthesizer.ts:59,68` | non-string content branches | Acceptable — rare multi-modal path | DPO pipeline uses string content; array/object content is valid OpenClaw schema but not exercised in v1 |
 | `src/dpo_runner.py:61-62,78-88` | lazy ML import blocks (`unsloth`, `trl`, `datasets`) | Acceptable — integration-only path | ML libraries not present in test environment; lazy imports allow importing module without GPU/torch |
 | `src/dpo_runner.py:108-119,131` | `main()` CLI entry point | Acceptable — subprocess-only path | `argparse` wiring; invoked as subprocess by training scheduler; CLI contract tested via `spawnTrainAndDeploy` |
