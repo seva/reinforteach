@@ -79,4 +79,57 @@ describe("loadConfig — validation errors", () => {
   it("throws ValidationError on invalid JSON", () => {
     expect(() => loadConfig("not json {{")).toThrow(ValidationError);
   });
+
+  it("throws ValidationError when JSON is valid but not an object", () => {
+    expect(() => loadConfig("null")).toThrow(ValidationError);
+    expect(() => loadConfig("42")).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when feedback_window_turns is missing", () => {
+    const raw = JSON.stringify({
+      adaptive_learning: { ...JSON.parse(validRaw).adaptive_learning, feedback_window_turns: undefined },
+    });
+    expect(() => loadConfig(raw)).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when confidence_threshold is missing", () => {
+    const raw = JSON.stringify({
+      adaptive_learning: { ...JSON.parse(validRaw).adaptive_learning, confidence_threshold: undefined },
+    });
+    expect(() => loadConfig(raw)).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when oracle_subagent is missing", () => {
+    const raw = JSON.stringify({
+      adaptive_learning: { ...JSON.parse(validRaw).adaptive_learning, oracle_subagent: undefined },
+    });
+    expect(() => loadConfig(raw)).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when training_trigger is not an object", () => {
+    const raw = JSON.stringify({
+      adaptive_learning: { ...JSON.parse(validRaw).adaptive_learning, training_trigger: 42 },
+    });
+    expect(() => loadConfig(raw)).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when training_trigger.min_candidates is missing", () => {
+    const raw = JSON.stringify({
+      adaptive_learning: {
+        ...JSON.parse(validRaw).adaptive_learning,
+        training_trigger: { max_interval: "7d" },
+      },
+    });
+    expect(() => loadConfig(raw)).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when training_trigger.max_interval is not a string", () => {
+    const raw = JSON.stringify({
+      adaptive_learning: {
+        ...JSON.parse(validRaw).adaptive_learning,
+        training_trigger: { min_candidates: 10, max_interval: 604800000 },
+      },
+    });
+    expect(() => loadConfig(raw)).toThrow(ValidationError);
+  });
 });
