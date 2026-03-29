@@ -147,6 +147,36 @@ Refs #6
 
 ---
 
+## Phase 5 — Plugin Assembly & Live Wiring
+
+Refs #7
+
+**Goal:** Wire all TypeScript pipeline components into a single plugin entry point; implement the real llama.cpp scorer for the deployment gate; configure for live OpenClaw deployment.
+
+**Prerequisite:** llama.cpp log-prob scoring approach verified (OQ #5 — check `/completion` for token log-prob output; document approach or decide on judge-model alternative in `docs/llamacpp-scoring.md`).
+
+### Tasks
+
+- [ ] llama.cpp scorer discovery: verify log-prob or judge-model approach → `docs/llamacpp-scoring.md`
+- [ ] `tests/plugin/pipeline.test.ts`
+  - Synthetic `FeedbackEvent` flows through full TS pipeline to buffer write
+  - Config loaded from fixture via `loadConfig`
+  - All downstream components (attribution, analyzer, synthesizer, confirmation, buffer) injected
+  - Negative signal path: event → `AttributedFeedback` → analysis → candidate → confirmed → buffer append
+  - Positive signal path: inverted chosen/rejected → buffer append
+  - Low-confidence analysis filtered before synthesizer
+- [ ] `src/plugin/pipeline.ts` — assembles all TS components; loads config via `loadConfig`; exposes `handleFeedbackEvent(event, hostSession, sessions, config)` called by feedback_capture hooks
+- [ ] `tests/training/test_real_scorer.py`
+  - Scorer calls llama.cpp for each held-out candidate
+  - Returns float score (mocked llama.cpp responses)
+  - Scorer with adapter path vs scorer with `None` (baseline) produce distinct scores
+- [ ] `src/deployment_gate.py` `_default_scorer` — real scorer using llama.cpp; approach per `docs/llamacpp-scoring.md`
+- [ ] `package.json` — add `"openclaw": { "extensions": ["src/plugin/pipeline.ts"] }`
+
+**Verification:** Load plugin in OpenClaw test agent; send synthetic feedback message; trace event through pipeline; verify `AttributedFeedback` logged and candidate appears in `training_buffer.jsonl`. Seed buffer; invoke `train_and_deploy.py` directly against live llama.cpp; verify adapter deployed (`GET /lora-adapters` confirms). All tests pass.
+
+---
+
 ## Open Questions
 
 1. **DPO vs GRPO** — resolved in Phase 0. DPO for Phase 1: candidate synthesizer maps directly to DPO format; oracle at collection time. GRPO deferred (requires live oracle at training time + vLLM). See `docs/training-algorithm-tradeoffs.md`.
@@ -156,6 +186,8 @@ Refs #6
 3. **Attribution across session resets** — resolved in Phase 0. `origin` field survives reset (contains `from`, `surface`, `threadId`). Archived transcripts preserved at `{sessionFile}.reset.{ISO-timestamp}`. Attribution recoverable via origin match + archived transcript traversal. See `docs/openclaw-primitives.md`.
 
 4. **Subagent spawn method** — resolved. Method is `agent` with `spawnedBy` param. Output via `--expect-final` flag or transcript read. See `docs/openclaw-subagent-api.md`.
+
+5. **llama.cpp scoring approach** — open. `POST /completion` does not document log-prob output. Options: (a) `logprobs` parameter in newer builds; (b) judge-model (prompt model as judge, score by preference frequency). Must resolve before implementing `_default_scorer`. See `docs/llamacpp-scoring.md` (pending).
 
 ---
 
