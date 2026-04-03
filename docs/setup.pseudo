@@ -14,7 +14,7 @@ Pseudocode runbook. Execute step by step; abort on first failure.
 
 ---
 
-## STEP 1 — Detect CUDA
+## STEP 1 — Detect CUDA driver
 
 ```
 run: nvidia-smi --query-gpu=driver_version --format=csv,noheader
@@ -28,16 +28,37 @@ derive CUDA_VERSION from driver:
 
 CUDA_SHORT = CUDA_VERSION with dot removed (e.g. "126")
 
-validate:
-  locate nvcc via $env:CUDA_PATH or default install paths
-  if not found: print warning "nvcc not found; llama-cpp-python build may fail"
-
 output: CUDA_VERSION, CUDA_SHORT
 ```
 
 ---
 
-## STEP 2 — Install torch
+## STEP 2 — Install CUDA Toolkit
+
+```
+locate nvcc:
+  check $env:CUDA_PATH\bin\nvcc.exe
+  check "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v{CUDA_VERSION}\bin\nvcc.exe"
+
+if nvcc found → skip
+
+download installer:
+  URL = "https://developer.download.nvidia.com/compute/cuda/{CUDA_VERSION}.0/local_installers/cuda_{CUDA_VERSION}.0_*_windows.exe"
+  → fetch exact filename from https://developer.nvidia.com/cuda-{CUDA_VERSION}-download-archive
+  download to $env:TEMP\cuda_installer.exe
+
+run silent install:
+  Start-Process "$env:TEMP\cuda_installer.exe" -ArgumentList "-s" -Wait
+
+refresh PATH (new shell or re-source profile)
+
+validate: nvcc --version shows {CUDA_VERSION}
+abort if validation fails
+```
+
+---
+
+## STEP 3 — Install torch
 
 ```
 TORCH_INDEX = "https://download.pytorch.org/whl/cu{CUDA_SHORT}"
@@ -52,7 +73,7 @@ abort if validation fails
 
 ---
 
-## STEP 3 — Install ML stack
+## STEP 4 — Install ML stack
 
 ```
 for each of [unsloth, trl, datasets]:
@@ -66,7 +87,7 @@ abort if validation fails
 
 ---
 
-## STEP 4 — Install llama-cpp-python (CUDA build)
+## STEP 5 — Install llama-cpp-python (CUDA build)
 
 ```
 if "from llama_cpp import Llama" passes → skip
@@ -82,7 +103,7 @@ abort if validation fails
 
 ---
 
-## STEP 5 — Install llama.cpp
+## STEP 6 — Install llama.cpp
 
 ```
 LLAMA_DIR = {install_dir}/llama.cpp
@@ -109,7 +130,7 @@ abort if either fails
 
 ---
 
-## STEP 6 — Download model
+## STEP 7 — Download model
 
 ```
 MODEL_FILE = "Qwen3.5-9B-Q4_K_M.gguf"
@@ -129,7 +150,7 @@ abort if validation fails
 
 ---
 
-## STEP 7 — Update openclaw config
+## STEP 8 — Update openclaw config
 
 ```
 read {config} as JSON
@@ -159,7 +180,7 @@ write {config} back (preserve formatting where possible)
 
 ---
 
-## STEP 8 — Validate all
+## STEP 9 — Validate all
 
 ```
 assert: python -c "import torch; assert torch.cuda.is_available()"
