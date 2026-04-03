@@ -156,8 +156,17 @@ if MODEL_PATH exists and size > 5_000_000_000 bytes → skip
 if "huggingface_hub" not importable:
   run: pip install huggingface_hub
 
-run: huggingface-cli download unsloth/Qwen3.5-9B-GGUF {MODEL_FILE} \
-       --local-dir {model_dir}
+NOTE: huggingface-cli is not reliably on PATH after pip install.
+      Use the Python API directly.
+
+run: python -c "
+  from huggingface_hub import hf_hub_download
+  hf_hub_download(
+    repo_id='unsloth/Qwen3.5-9B-GGUF',
+    filename='{MODEL_FILE}',
+    local_dir='{model_dir}'
+  )
+"
 
 validate: MODEL_PATH exists and size > 5_000_000_000 bytes
 abort if validation fails
@@ -202,7 +211,7 @@ assert: python -c "import torch; assert torch.cuda.is_available()"
 assert: python -c "from llama_cpp import Llama"
 assert: python -c "import unsloth, trl, datasets"
 assert: {LLAMACPP_DIR}/build/bin/llama-server.exe exists
-assert: {LLAMACPP_DIR}/convert-lora-to-gguf.py exists
+assert: {LLAMACPP_DIR}/convert_lora_to_gguf.py exists
 assert: {MODEL_PATH} exists
 assert: {config} agents[{agent_id}].adaptive_learning present
 
