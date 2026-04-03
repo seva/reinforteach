@@ -77,7 +77,7 @@ class TestGgufConversion:
             return MockResult(returncode=0)
 
         convert(str(tmp_path), output_path, run_subprocess=mock_run)
-        assert captured["script"] == str(pathlib.Path("/llama") / "convert-lora-to-gguf.py")
+        assert captured["script"] == str(pathlib.Path("/llama") / "convert_lora_to_gguf.py")
 
     def test_raises_when_output_file_unreadable(self, tmp_path):
         output_path = str(tmp_path / "out.gguf")

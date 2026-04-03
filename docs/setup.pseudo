@@ -139,7 +139,7 @@ set user env var: LLAMACPP_DIR = {LLAMA_DIR} (persistent, survives shell restart
 
 validate:
   {LLAMA_DIR}/build/bin/llama-server.exe --version
-  python {LLAMA_DIR}/convert-lora-to-gguf.py --help
+  python {LLAMA_DIR}/convert_lora_to_gguf.py --help
 abort if either fails
 ```
 

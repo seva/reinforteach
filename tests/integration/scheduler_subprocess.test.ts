@@ -44,11 +44,11 @@ describe("spawnTrainAndDeploy — subprocess args", () => {
 
   it("includes --convert-script when provided", async () => {
     const spawn = makeSpawn(0);
-    await spawnTrainAndDeploy({ ...baseConfig, convertScript: "/llama.cpp/convert-lora-to-gguf.py" }, spawn);
+    await spawnTrainAndDeploy({ ...baseConfig, convertScript: "/llama.cpp/convert_lora_to_gguf.py" }, spawn);
 
     const [args] = (spawn as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(args).toContain("--convert-script");
-    expect(args).toContain("/llama.cpp/convert-lora-to-gguf.py");
+    expect(args).toContain("/llama.cpp/convert_lora_to_gguf.py");
   });
 });
 

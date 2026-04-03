@@ -1,6 +1,6 @@
 """GGUF conversion step.
 
-Shells out to llama.cpp's convert-lora-to-gguf.py and validates the output header.
+Shells out to llama.cpp's convert_lora_to_gguf.py and validates the output header.
 Sits between dpo_runner.py (produces adapter_model.safetensors) and
 deployment_gate.py (evaluates adapter.gguf).
 """
@@ -29,7 +29,7 @@ def convert(
 ) -> str:
     """Convert adapter_dir to GGUF format.
 
-    Shells out to convert-lora-to-gguf.py, then validates the GGUF magic header.
+    Shells out to convert_lora_to_gguf.py, then validates the GGUF magic header.
     Returns output_path on success. Raises ConversionError on failure.
     """
     if convert_script is None:
@@ -38,7 +38,7 @@ def convert(
             raise ConversionError(
                 "convert_script not provided and LLAMACPP_DIR env var not set"
             )
-        convert_script = str(pathlib.Path(llamacpp_dir) / "convert-lora-to-gguf.py")
+        convert_script = str(pathlib.Path(llamacpp_dir) / "convert_lora_to_gguf.py")
 
     if run_subprocess is None:
         run_subprocess = subprocess.run
@@ -51,7 +51,7 @@ def convert(
 
     if result.returncode != 0:
         raise ConversionError(
-            f"convert-lora-to-gguf.py exited {result.returncode}: {result.stderr.strip()}"
+            f"convert_lora_to_gguf.py exited {result.returncode}: {result.stderr.strip()}"
         )
 
     _validate_gguf_header(output_path)
