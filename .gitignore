@@ -6,3 +6,9 @@ __pycache__/
 .pytest_cache/
 coverage/
 .coverage
+
+# Runtime training artifacts — never commit model weights or buffer data
+*.jsonl
+*.safetensors
+*.gguf
+outputs/

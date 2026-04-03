@@ -8,11 +8,11 @@ import type { AnalysisResult } from "../../src/feedback_analyzer.js";
 const attributed: AttributedFeedback = {
   feedbackEvent: {
     kind: "message",
-    from: "seva",
+    from: "operator",
     content: "That answer was wrong",
     timestamp: Date.now(),
   },
-  sessionKey: "agent:main:main",
+  sessionKey: "agent:test-agent:session-1",
   contextWindow: [
     { message: { role: "user", content: "What is the capital of France?" } },
     { message: { role: "assistant", content: "The capital of France is Berlin." } },
@@ -35,7 +35,7 @@ const positiveAnalysis: AnalysisResult = {
 
 const makeContext = (oracleResponse: string): CandidateSynthesizerContext => ({
   spawnOracle: async () => oracleResponse,
-  spawnedBy: "agent:main:main",
+  spawnedBy: "agent:test-agent:session-1",
 });
 
 describe("synthesizeCandidate — negative path", () => {
@@ -130,7 +130,7 @@ describe("synthesizeCandidate — validation", () => {
   it("propagates oracle rejection without swallowing it", async () => {
     const ctx: CandidateSynthesizerContext = {
       spawnOracle: async () => { throw new Error("oracle unavailable"); },
-      spawnedBy: "agent:main:main",
+      spawnedBy: "agent:test-agent:session-1",
     };
 
     await expect(synthesizeCandidate(attributed, negativeAnalysis, ctx)).rejects.toThrow(

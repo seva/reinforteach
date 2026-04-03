@@ -4,9 +4,9 @@ import type { HostSession } from "../../src/session_adapter.js";
 
 const host: HostSession = {
   sessionId: "s1",
-  sessionKey: "agent:main:main",
+  sessionKey: "agent:test-agent:session-1",
   sessionFile: "/sessions/transcript.jsonl",
-  origin: { from: "seva", surface: "telegram", threadId: "954092305" },
+  origin: { from: "operator", surface: "telegram", threadId: "123456789" },
 };
 
 describe("toSessionEntry", () => {
@@ -14,7 +14,7 @@ describe("toSessionEntry", () => {
     const entry = toSessionEntry(host, () => []);
 
     expect(entry.sessionId).toBe("s1");
-    expect(entry.sessionKey).toBe("agent:main:main");
+    expect(entry.sessionKey).toBe("agent:test-agent:session-1");
     expect(entry.sessionFile).toBe("/sessions/transcript.jsonl");
     expect(entry.origin).toEqual(host.origin);
   });

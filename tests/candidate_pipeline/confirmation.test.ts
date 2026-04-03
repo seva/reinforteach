@@ -10,7 +10,7 @@ const candidate: DPOCandidate = {
   reward: -0.72,
 };
 
-const operatorId = "seva";
+const operatorId = "operator";
 
 const makeContext = (
   response: string | null,

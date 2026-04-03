@@ -8,11 +8,11 @@ import type { MessageFeedbackEvent } from "../../src/plugin/feedback_capture.js"
 const attributed: AttributedFeedback = {
   feedbackEvent: {
     kind: "message",
-    from: "seva",
+    from: "operator",
     content: "That answer was wrong",
     timestamp: Date.now(),
   } satisfies MessageFeedbackEvent,
-  sessionKey: "agent:main:main",
+  sessionKey: "agent:test-agent:session-1",
   contextWindow: [
     { message: { role: "user", content: "What is the capital of France?" } },
     { message: { role: "assistant", content: "The capital of France is Berlin." } },
@@ -25,7 +25,7 @@ const makeContext = (
 ): FeedbackAnalyzerContext => ({
   spawnAgent: async () => JSON.stringify(responseJson),
   confidenceThreshold,
-  spawnedBy: "agent:main:main",
+  spawnedBy: "agent:test-agent:session-1",
 });
 
 describe("analyzeFeedback — happy path", () => {
@@ -93,7 +93,7 @@ describe("analyzeFeedback — subagent response validation", () => {
     const ctx: FeedbackAnalyzerContext = {
       spawnAgent: async () => "not valid json {{",
       confidenceThreshold: 0.7,
-      spawnedBy: "agent:main:main",
+      spawnedBy: "agent:test-agent:session-1",
     };
 
     await expect(analyzeFeedback(attributed, ctx)).rejects.toThrow(ValidationError);
@@ -127,7 +127,7 @@ describe("analyzeFeedback — subagent response validation", () => {
     const ctx: FeedbackAnalyzerContext = {
       spawnAgent: async () => "null",
       confidenceThreshold: 0.7,
-      spawnedBy: "agent:main:main",
+      spawnedBy: "agent:test-agent:session-1",
     };
 
     await expect(analyzeFeedback(attributed, ctx)).rejects.toThrow(ValidationError);
@@ -137,7 +137,7 @@ describe("analyzeFeedback — subagent response validation", () => {
     const ctx: FeedbackAnalyzerContext = {
       spawnAgent: async () => { throw new Error("gateway unavailable"); },
       confidenceThreshold: 0.7,
-      spawnedBy: "agent:main:main",
+      spawnedBy: "agent:test-agent:session-1",
     };
 
     await expect(analyzeFeedback(attributed, ctx)).rejects.toThrow("gateway unavailable");

@@ -14,9 +14,9 @@ const makeTranscript = (count: number): TranscriptLine[] =>
 
 const session: SessionEntry = {
   sessionId: "s1",
-  sessionKey: "agent:main:main",
+  sessionKey: "agent:test-agent:session-1",
   sessionFile: "/fake/transcript.jsonl",
-  origin: { from: "seva", surface: "telegram", threadId: "954092305" },
+  origin: { from: "operator", surface: "telegram", threadId: "123456789" },
 };
 
 const feedbackWindowTurns = 3;
@@ -28,7 +28,7 @@ describe("attributeFeedback — active session", () => {
 
     const event: MessageFeedbackEvent = {
       kind: "message",
-      from: "seva",
+      from: "operator",
       content: "That answer was wrong",
       timestamp: Date.now(),
     };
@@ -40,7 +40,7 @@ describe("attributeFeedback — active session", () => {
     });
 
     expect(result).not.toBeNull();
-    expect(result!.sessionKey).toBe("agent:main:main");
+    expect(result!.sessionKey).toBe("agent:test-agent:session-1");
     expect(result!.contextWindow).toHaveLength(feedbackWindowTurns);
     expect(result!.contextWindow).toEqual(transcript.slice(-feedbackWindowTurns));
     expect(result!.feedbackEvent).toBe(event);
@@ -54,8 +54,8 @@ describe("attributeFeedback — active session", () => {
       kind: "tool_call",
       toolName: "bash",
       params: { command: "ls" },
-      sessionKey: "agent:main:main",
-      agentId: "main",
+      sessionKey: "agent:test-agent:session-1",
+      agentId: "test-agent",
       timestamp: Date.now(),
     };
 
@@ -66,7 +66,7 @@ describe("attributeFeedback — active session", () => {
     });
 
     expect(result).not.toBeNull();
-    expect(result!.sessionKey).toBe("agent:main:main");
+    expect(result!.sessionKey).toBe("agent:test-agent:session-1");
     expect(result!.contextWindow).toHaveLength(feedbackWindowTurns);
   });
 
@@ -76,7 +76,7 @@ describe("attributeFeedback — active session", () => {
 
     const event: MessageFeedbackEvent = {
       kind: "message",
-      from: "seva",
+      from: "operator",
       content: "ok",
       timestamp: Date.now(),
     };
@@ -99,9 +99,9 @@ describe("attributeFeedback — session reset", () => {
 
     const resetSession: SessionEntry = {
       sessionId: "s2-after-reset",
-      sessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:session-1",
       sessionFile: "/fake/transcript-new.jsonl",
-      origin: { from: "seva", surface: "telegram", threadId: "954092305" },
+      origin: { from: "operator", surface: "telegram", threadId: "123456789" },
       archivedTranscripts: [archivedPath],
     };
 
@@ -112,7 +112,7 @@ describe("attributeFeedback — session reset", () => {
 
     const event: MessageFeedbackEvent = {
       kind: "message",
-      from: "seva",
+      from: "operator",
       content: "That was still wrong",
       timestamp: Date.now(),
     };
@@ -137,7 +137,7 @@ describe("attributeFeedback — I/O failure", () => {
 
     const event: MessageFeedbackEvent = {
       kind: "message",
-      from: "seva",
+      from: "operator",
       content: "wrong",
       timestamp: Date.now(),
     };
@@ -160,8 +160,8 @@ describe("attributeFeedback — tool_call sessionKey no match", () => {
       kind: "tool_call",
       toolName: "bash",
       params: { command: "ls" },
-      sessionKey: "agent:main:other",
-      agentId: "main",
+      sessionKey: "agent:test-agent:session-2",
+      agentId: "test-agent",
       timestamp: Date.now(),
     };
 
@@ -184,7 +184,7 @@ describe("attributeFeedback — tool_call without sessionKey", () => {
       toolName: "bash",
       params: { command: "ls" },
       // sessionKey intentionally absent
-      agentId: "main",
+      agentId: "test-agent",
       timestamp: Date.now(),
     };
 
@@ -202,9 +202,9 @@ describe("attributeFeedback — empty transcript, no archives", () => {
   it("returns empty contextWindow when active transcript is empty and no archives exist", async () => {
     const sessionWithNoArchives: SessionEntry = {
       sessionId: "s1",
-      sessionKey: "agent:main:main",
+      sessionKey: "agent:test-agent:session-1",
       sessionFile: "/fake/transcript.jsonl",
-      origin: { from: "seva", surface: "telegram" },
+      origin: { from: "operator", surface: "telegram" },
       // archivedTranscripts absent
     };
 
@@ -212,7 +212,7 @@ describe("attributeFeedback — empty transcript, no archives", () => {
 
     const event: MessageFeedbackEvent = {
       kind: "message",
-      from: "seva",
+      from: "operator",
       content: "ok",
       timestamp: Date.now(),
     };
@@ -253,7 +253,7 @@ describe("attributeFeedback — no match", () => {
 
     const event: MessageFeedbackEvent = {
       kind: "message",
-      from: "seva",
+      from: "operator",
       content: "hello",
       timestamp: Date.now(),
     };

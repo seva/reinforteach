@@ -8,20 +8,20 @@ import { ValidationError } from "../../src/errors.js";
 describe("handleMessageReceived", () => {
   it("produces a message FeedbackEvent with all core fields", () => {
     const event = {
-      from: "seva",
+      from: "operator",
       content: "That answer was wrong",
       timestamp: 1711584000000,
     };
     const context = {
       channelId: "telegram",
-      accountId: "954092305",
+      accountId: "123456789",
       conversationId: "conv-abc",
     };
 
     const result = handleMessageReceived(event, context);
 
     expect(result.kind).toBe("message");
-    expect(result.from).toBe("seva");
+    expect(result.from).toBe("operator");
     expect(result.content).toBe("That answer was wrong");
     expect(result.timestamp).toBe(1711584000000);
     expect(result.conversationId).toBe("conv-abc");
@@ -31,7 +31,7 @@ describe("handleMessageReceived", () => {
   it("falls back to Date.now() when timestamp is absent", () => {
     const before = Date.now();
     const result = handleMessageReceived(
-      { from: "seva", content: "ok" },
+      { from: "operator", content: "ok" },
       { channelId: "telegram" },
     );
     const after = Date.now();
@@ -42,7 +42,7 @@ describe("handleMessageReceived", () => {
 
   it("tolerates missing optional context fields", () => {
     const result = handleMessageReceived(
-      { from: "seva", content: "nice" },
+      { from: "operator", content: "nice" },
       { channelId: "telegram" },
     );
 
@@ -52,7 +52,7 @@ describe("handleMessageReceived", () => {
 
   it("does not carry unknown fields through", () => {
     const result = handleMessageReceived(
-      { from: "seva", content: "ok", extra: "noise" } as never,
+      { from: "operator", content: "ok", extra: "noise" } as never,
       { channelId: "telegram" },
     );
 
@@ -67,7 +67,7 @@ describe("handleMessageReceived", () => {
 
   it("throws ValidationError when content is missing", () => {
     expect(() =>
-      handleMessageReceived({ from: "seva" } as never, { channelId: "telegram" }),
+      handleMessageReceived({ from: "operator" } as never, { channelId: "telegram" }),
     ).toThrow(ValidationError);
   });
 });
@@ -81,8 +81,8 @@ describe("handleAfterToolCall", () => {
       durationMs: 42,
     };
     const context = {
-      agentId: "main",
-      sessionKey: "agent:main:main",
+      agentId: "test-agent",
+      sessionKey: "agent:test-agent:session-1",
       toolName: "bash",
     };
 
@@ -92,8 +92,8 @@ describe("handleAfterToolCall", () => {
     expect(result.toolName).toBe("bash");
     expect(result.params).toEqual({ command: "ls" });
     expect(result.result).toEqual({ output: "file.txt" });
-    expect(result.agentId).toBe("main");
-    expect(result.sessionKey).toBe("agent:main:main");
+    expect(result.agentId).toBe("test-agent");
+    expect(result.sessionKey).toBe("agent:test-agent:session-1");
     expect(result.durationMs).toBe(42);
     expect(result.error).toBeUndefined();
   });
@@ -105,8 +105,8 @@ describe("handleAfterToolCall", () => {
       error: "command not found",
     };
     const context = {
-      agentId: "main",
-      sessionKey: "agent:main:main",
+      agentId: "test-agent",
+      sessionKey: "agent:test-agent:session-1",
       toolName: "bash",
     };
 
@@ -120,7 +120,7 @@ describe("handleAfterToolCall", () => {
   it("does not carry unknown fields through", () => {
     const result = handleAfterToolCall(
       { toolName: "bash", params: {}, extra: "noise" } as never,
-      { agentId: "main", sessionKey: "agent:main:main", toolName: "bash" },
+      { agentId: "test-agent", sessionKey: "agent:test-agent:session-1", toolName: "bash" },
     );
 
     expect(result).not.toHaveProperty("extra");
@@ -130,7 +130,7 @@ describe("handleAfterToolCall", () => {
     const before = Date.now();
     const result = handleAfterToolCall(
       { toolName: "bash", params: {} },
-      { agentId: "main", sessionKey: "agent:main:main", toolName: "bash" },
+      { agentId: "test-agent", sessionKey: "agent:test-agent:session-1", toolName: "bash" },
     );
     const after = Date.now();
 
@@ -142,7 +142,7 @@ describe("handleAfterToolCall", () => {
     expect(() =>
       handleAfterToolCall(
         { params: {} } as never,
-        { agentId: "main", sessionKey: "agent:main:main", toolName: "bash" },
+        { agentId: "test-agent", sessionKey: "agent:test-agent:session-1", toolName: "bash" },
       ),
     ).toThrow(ValidationError);
   });
@@ -151,7 +151,7 @@ describe("handleAfterToolCall", () => {
     expect(() =>
       handleAfterToolCall(
         { toolName: "bash" } as never,
-        { agentId: "main", sessionKey: "agent:main:main", toolName: "bash" },
+        { agentId: "test-agent", sessionKey: "agent:test-agent:session-1", toolName: "bash" },
       ),
     ).toThrow(ValidationError);
   });
