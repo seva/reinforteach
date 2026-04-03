@@ -36,6 +36,12 @@ Refs #3
   - `after_tool_call` handler produces `FeedbackEvent` with `toolName`, `params`, `result`, `agentId`, `sessionKey`
   - Unknown/malformed event fields are dropped gracefully
 - [x] `src/plugin/feedback_capture.ts` — OpenClaw plugin registering `message_received` and `after_tool_call` hooks; emits structured `FeedbackEvent` with session snapshot
+- [x] `tests/session_adapter/session_adapter.test.ts`
+  - Maps all `HostSession` fields through to `SessionEntry` unchanged
+  - Derives `archivedTranscripts` via `listFiles` prefix scan
+  - Sorts archived paths oldest-first
+  - Returns empty array when no archives exist
+- [x] `src/session_adapter.ts` — maps raw OpenClaw `HostSession` schema to domain `SessionEntry`; derives `archivedTranscripts` via filesystem prefix scan
 - [x] `tests/feedback_capture/attribution.test.ts`
   - Feedback event attributed to correct turn in active session (by `sessionKey` + turn index within `feedback_window_turns`)
   - Attribution recovers correctly when session has been reset: uses `origin` match + archived transcript
@@ -175,6 +181,7 @@ Refs #7
 - [x] `tests/integration/scheduler_subprocess.test.ts` — 3 tests: deploy called with adapter_path on exit 0; not called on exit 1; resolves without callback on exit 0
 - [x] `src/plugin/feedback_capture.ts` — `PluginWireContext` + `createPlugin(context, handleEvent)`: `register()` calls `startScheduler()`, wires `message_received` → `handleEvent`, `after_tool_call` → `handleAfterToolCall` (not piped to pipeline)
 - [x] `tests/plugin/feedback_capture_wiring.test.ts` — 4 tests: startScheduler called on register; message_received piped to handleEvent with sessions/config/pipeline; getSessions called; after_tool_call not piped to handleEvent
+- [ ] `src/plugin/feedback_capture.ts` — wire default export: call `createPlugin` with real OpenClaw API implementations — `getSessions` via OpenClaw sessions API, `spawnAgent`/`spawnOracle` via subagent API, `sendMessage`/`awaitResponse` via channel API, `appendToBuffer` via filesystem, `startScheduler` wired to `spawnTrainAndDeploy`; load `adaptive_learning` config from agent config file
 
 **Verification:** Load plugin in OpenClaw test agent; send synthetic feedback message; trace event through pipeline; verify `AttributedFeedback` logged and candidate appears in `training_buffer.jsonl`. Seed buffer; invoke `train_and_deploy.py` directly against live llama.cpp; verify adapter deployed (`GET /lora-adapters` confirms). All tests pass.
 
