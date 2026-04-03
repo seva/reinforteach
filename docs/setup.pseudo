@@ -43,14 +43,16 @@ locate nvcc:
 if nvcc found → skip
 
 download installer:
-  URL = "https://developer.download.nvidia.com/compute/cuda/{CUDA_VERSION}.0/local_installers/cuda_{CUDA_VERSION}.0_*_windows.exe"
-  → fetch exact filename from https://developer.nvidia.com/cuda-{CUDA_VERSION}-download-archive
+  URL = "https://developer.download.nvidia.com/compute/cuda/{CUDA_VERSION}.0/local_installers/cuda_{CUDA_VERSION}.0_{DRIVER_VERSION}_windows.exe"
+  e.g. CUDA 12.6, driver 560.76: cuda_12.6.0_560.76_windows.exe
   download to $env:TEMP\cuda_installer.exe
 
 run silent install:
   Start-Process "$env:TEMP\cuda_installer.exe" -ArgumentList "-s" -Wait
+  poll until process exits (may take 5–10 min)
 
-refresh PATH (new shell or re-source profile)
+set CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v{CUDA_VERSION}"
+add CUDA_PATH\bin to PATH for current session
 
 validate: nvcc --version shows {CUDA_VERSION}
 abort if validation fails
@@ -61,9 +63,17 @@ abort if validation fails
 ## STEP 3 — Install torch
 
 ```
+set env for session: CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v{CUDA_VERSION}"
+add CUDA_PATH\bin to PATH
+
 TORCH_INDEX = "https://download.pytorch.org/whl/cu{CUDA_SHORT}"
 
 if "import torch; torch.cuda.is_available()" passes → skip (already installed)
+
+if torch installed but CPU build (version contains "+cpu"):
+  remove corrupted backup if present:
+    Remove-Item site-packages\~orch -Recurse -Force -ErrorAction SilentlyContinue
+  run: pip uninstall torch torchvision torchaudio -y
 
 run: pip install torch torchvision torchaudio --index-url {TORCH_INDEX}
 
@@ -92,10 +102,15 @@ abort if validation fails
 ```
 if "from llama_cpp import Llama" passes → skip
 
-set env: CMAKE_ARGS = "-DGGML_CUDA=ON"
-set env: FORCE_CMAKE = "1"
+NOTE: pre-built Windows CUDA wheels exist only up to v0.3.4.
+      v0.3.5+ dropped Windows wheels; building from source requires MSVC.
+      Use the direct wheel URL — no build step, no MSVC needed.
+      cu124 wheels are backward-compatible with CUDA 12.6+.
 
-run: pip install llama-cpp-python --no-cache-dir --force-reinstall
+WHEEL = "https://github.com/abetlen/llama-cpp-python/releases/download/v0.3.4-cu124/llama_cpp_python-0.3.4-cp{PYTHON_VERSION}-cp{PYTHON_VERSION}-win_amd64.whl"
+  e.g. Python 3.12: cp312-cp312
+
+run: pip install {WHEEL}
 
 validate: python -c "from llama_cpp import Llama"
 abort if validation fails
