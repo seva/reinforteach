@@ -178,6 +178,8 @@ export interface _LivePluginTestSeam {
   pendingResponses: Map<string, (text: string | null) => void>;
   spawnAgent: (params: SpawnParams) => Promise<string>;
   spawnOracle: (params: SpawnParams) => Promise<string>;
+  sendMessage: (to: string, text: string) => Promise<void>;
+  awaitResponse: (from: string, timeoutMs: number) => Promise<string | null>;
 }
 
 export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefined {
@@ -377,7 +379,7 @@ export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefi
     handleAfterToolCall(event, ctx as ToolCallContext);
   });
 
-  return { pendingResponses, spawnAgent, spawnOracle };
+  return { pendingResponses, spawnAgent, spawnOracle, sendMessage, awaitResponse };
 }
 
 const plugin = {

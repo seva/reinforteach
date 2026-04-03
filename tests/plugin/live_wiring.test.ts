@@ -226,6 +226,90 @@ describe("live plugin default export", () => {
 
   // --- Confirmation short-circuit ---
 
+  // --- sendMessage ---
+
+  it("sendMessage calls subagent.run with deliver:true on active session key", async () => {
+    const { api, subagentRun } = makeApi();
+    const seam = _buildLivePlugin(api);
+    expect(seam).toBeDefined();
+
+    await seam!.sendMessage("operator", "please confirm");
+
+    expect(subagentRun).toHaveBeenCalledOnce();
+    const [params] = subagentRun.mock.calls[0] as [{ sessionKey: string; deliver: boolean; message: string }];
+    expect(params.deliver).toBe(true);
+    expect(params.message).toBe("please confirm");
+  });
+
+  // --- awaitResponse timeout ---
+
+  it("awaitResponse resolves null when timeout elapses", async () => {
+    vi.useFakeTimers();
+    const { api } = makeApi();
+    const seam = _buildLivePlugin(api);
+    expect(seam).toBeDefined();
+
+    const promise = seam!.awaitResponse("operator", 1000);
+    vi.advanceTimersByTime(1001);
+    const result = await promise;
+
+    expect(result).toBeNull();
+    vi.useRealTimers();
+  });
+
+  // --- pipeline error catch ---
+
+  it("pipeline errors are caught and logged, not thrown", async () => {
+    const { api, fire } = makeApi();
+    // Make attribution throw
+    const { attributeFeedback } = await import("../../src/attribution.js");
+    vi.mocked(attributeFeedback as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error("attribution exploded"),
+    );
+    _buildLivePlugin(api);
+
+    await expect(
+      fire("message_received",
+        { from: "operator", content: "wrong", timestamp: Date.now() },
+        { channelId: "telegram", sessionKey: "agent:main:main" },
+      ),
+    ).resolves.not.toThrow();
+
+    expect(api.logger.error).toHaveBeenCalledWith(
+      "reinforteach: pipeline error",
+      expect.objectContaining({ error: expect.stringContaining("attribution exploded") }),
+    );
+  });
+
+  // --- after_tool_call handler ---
+
+  it("after_tool_call hook body executes without throwing", async () => {
+    const { api, fire } = makeApi();
+    _buildLivePlugin(api);
+
+    await expect(
+      fire("after_tool_call",
+        { toolName: "bash", params: { command: "ls" }, result: { output: "file.txt" } },
+        { agentId: "test-agent", sessionKey: "agent:test-agent:session-1", toolName: "bash" },
+      ),
+    ).resolves.not.toThrow();
+  });
+
+  // --- register catch branch ---
+
+  it("register catches _buildLivePlugin errors and logs them", () => {
+    const { api } = makeApi();
+    // Pass an api without the required runtime property to force a throw
+    const brokenApi = { ...api, runtime: null };
+    expect(() => plugin.register(brokenApi)).not.toThrow();
+    expect((brokenApi as typeof api).logger.error).toHaveBeenCalledWith(
+      "reinforteach: failed to initialise",
+      expect.objectContaining({ error: expect.any(String) }),
+    );
+  });
+
+  // --- Confirmation short-circuit ---
+
   it("second message from same sender resolves pending awaitResponse without re-running pipeline", async () => {
     const { api, fire } = makeApi();
     const seam = _buildLivePlugin(api);
