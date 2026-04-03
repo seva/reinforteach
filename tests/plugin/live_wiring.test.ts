@@ -65,18 +65,15 @@ vi.mock("../../src/confirmation_handler.js", async (importOriginal) => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const VALID_AGENT_LIST = [
-  {
-    id: "main",
-    adaptive_learning: {
-      feedback_window_turns: 5,
-      confidence_threshold: 0.6,
-      training_trigger: { min_candidates: 10, max_interval: "7d" },
-      model_path: "/models/qwen.gguf",
-      oracle_subagent: "guru",
-    },
+const VALID_PLUGIN_CONFIG = {
+  adaptive_learning: {
+    feedback_window_turns: 5,
+    confidence_threshold: 0.6,
+    training_trigger: { min_candidates: 10, max_interval: "7d" },
+    model_path: "/models/qwen.gguf",
+    oracle_subagent: "guru",
   },
-];
+};
 
 const SESSION_STORE = {
   "agent:main:main": {
@@ -92,7 +89,7 @@ const SESSION_STORE = {
   },
 };
 
-function makeApi(agentList = VALID_AGENT_LIST as unknown[]) {
+function makeApi(pluginConfig: Record<string, unknown> = VALID_PLUGIN_CONFIG) {
   const hooks: Record<string, ((...args: unknown[]) => unknown)> = {};
 
   const subagentRun = vi.fn().mockResolvedValue({ runId: "run-1" });
@@ -102,7 +99,8 @@ function makeApi(agentList = VALID_AGENT_LIST as unknown[]) {
   });
 
   const api = {
-    config: { agents: { list: agentList } },
+    config: {},
+    pluginConfig,
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     on: vi.fn((event: string, handler: (...args: unknown[]) => unknown) => {
       hooks[event] = handler;
@@ -142,8 +140,8 @@ describe("live plugin default export", () => {
 
   // --- Registration guard ---
 
-  it("warns and skips hook registration when no agent has adaptive_learning", () => {
-    const { api } = makeApi([{ id: "main" }]);
+  it("warns and skips hook registration when no adaptive_learning in pluginConfig", () => {
+    const { api } = makeApi({});
     plugin.register(api);
     expect(api.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining("adaptive_learning"),
@@ -302,7 +300,7 @@ describe("live plugin default export", () => {
     // Pass an api without the required runtime property to force a throw
     const brokenApi = { ...api, runtime: null };
     expect(() => plugin.register(brokenApi)).not.toThrow();
-    expect((brokenApi as typeof api).logger.error).toHaveBeenCalledWith(
+    expect((brokenApi as { logger: { error: ReturnType<typeof vi.fn> } }).logger.error).toHaveBeenCalledWith(
       "reinforteach: failed to initialise",
       expect.objectContaining({ error: expect.any(String) }),
     );

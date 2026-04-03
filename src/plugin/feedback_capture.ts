@@ -147,6 +147,7 @@ export function createPlugin(
 
 type OpenClawApi = {
   config: unknown;
+  pluginConfig: Record<string, unknown>;
   logger: {
     info: (msg: string, meta?: Record<string, unknown>) => void;
     warn: (msg: string, meta?: Record<string, unknown>) => void;
@@ -183,14 +184,13 @@ export interface _LivePluginTestSeam {
 }
 
 export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefined {
-  const rawCfg = api.config as Record<string, unknown>;
-  const agentList = ((rawCfg.agents as Record<string, unknown>)?.list ?? []) as Array<Record<string, unknown>>;
-  const agentEntry = agentList.find((a) => a.adaptive_learning);
-  if (!agentEntry) {
-    api.logger.warn("reinforteach: no agent with adaptive_learning config — plugin inactive");
+  // Config lives in plugins.entries.reinforteach.config in openclaw.json,
+  // accessed via api.pluginConfig. loadConfig expects adaptive_learning at top level.
+  if (!api.pluginConfig.adaptive_learning) {
+    api.logger.warn("reinforteach: no adaptive_learning in plugin config — plugin inactive");
     return undefined;
   }
-  const config = loadConfig(JSON.stringify(agentEntry));
+  const config = loadConfig(JSON.stringify(api.pluginConfig));
 
   // --- Sessions ---
   const storePath = api.runtime.agent.session.resolveStorePath(api.config);
