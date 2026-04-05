@@ -208,34 +208,38 @@ write {config} back (preserve formatting where possible)
 
 ```
 read {config} as JSON
-assert target_agent exists
+assert agents list contains entry with id == {agent_id}
+assert agents list contains entry with id == {oracle_id}
 
-if target_agent.model is string, convert to object: { primary: target_agent.model }
-target_agent.model.primary = "openai/Qwen3.5-9B"
+# 1. Define a custom provider pointing to the local llama.cpp server
+models = config.setdefault("models", {})
+models["mode"] = "merge"
+providers = models.setdefault("providers", {})
+providers["local"] = {
+    "baseUrl": "http://localhost:8080/v1",
+    "apiKey": "sk-dummy",
+    "api": "openai-completions",
+    "models": [
+        { "id": "Qwen3.5-9B", "name": "Local Qwen 9B", "contextWindow": 32000 }
+    ]
+}
 
-ensure agents.defaults.models exists (create objects if missing)
-inject into agents.defaults.models:
-  "openai/Qwen3.5-9B": {
-    "alias": "Local Qwen 9B"
-  }
+# 2. Set the global default model
+defaults = config.setdefault("agents", {}).setdefault("defaults", {})
+defaults["model"] = { "primary": "local/Qwen3.5-9B" }
+
+# 3. Update the target agent
+target_agent = agents[{agent_id}]
+target_agent["model"] = { "primary": "local/Qwen3.5-9B" }
 
 write {config} back
 
+# 4. Clean up any stale openai:local auth profile (no longer needed)
 AUTH_PROFILES_PATH = "~/.openclaw/agents/{agent_id}/agent/auth-profiles.json"
 read AUTH_PROFILES_PATH as JSON
-(create empty profiles object if missing)
-
-inject into profiles:
-  "openai:local": {
-    "type": "api_key",
-    "provider": "openai",
-    "key": "sk-dummy",
-    "baseURL": "http://localhost:8080/v1"
-  }
-
-set lastGood.openai = "openai:local"
-
-write AUTH_PROFILES_PATH back
+if "openai:local" in profiles:
+    delete profiles["openai:local"]
+    write AUTH_PROFILES_PATH back
 ```
 
 ---
