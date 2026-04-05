@@ -61,8 +61,14 @@ def train(
         from unsloth import FastLanguageModel  # type: ignore[import]
         model_loader = FastLanguageModel
 
+    hf_model_id = config.model_path
+    if hf_model_id.lower().endswith(".gguf"):
+        import os
+        base = os.path.basename(hf_model_id).split("-Q")[0].split("-GGUF")[0]
+        hf_model_id = f"unsloth/{base}"
+
     model, tokenizer = model_loader.from_pretrained(
-        config.model_path,
+        hf_model_id,
         load_in_4bit=True,
         max_seq_length=2048,
     )
