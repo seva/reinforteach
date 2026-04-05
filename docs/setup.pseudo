@@ -211,26 +211,30 @@ read {config} as JSON
 assert agents list contains entry with id == {agent_id}
 assert agents list contains entry with id == {oracle_id}
 
-# 1. Define a custom provider pointing to the local llama.cpp server
+# 1. Configure openai provider with baseUrl pointing to local llama.cpp
+#    THIS IS THE KEY: baseUrl must be in models.providers.openai, not auth-profiles
 models = config.setdefault("models", {})
 models["mode"] = "merge"
 providers = models.setdefault("providers", {})
-providers["local"] = {
-    "baseUrl": "http://localhost:8080/v1",
-    "apiKey": "sk-dummy",
-    "api": "openai-completions",
-    "models": [
-        { "id": "Qwen3.5-9B", "name": "Local Qwen 9B", "contextWindow": 32000 }
-    ]
-}
+openai_prov = providers.setdefault("openai", {})
+openai_prov["baseUrl"] = "http://localhost:8080/v1"
+openai_prov["apiKey"] = "sk-dummy"
+openai_prov["api"] = "openai-completions"
 
-# 2. Set the global default model
+# 2. Register the model in the provider's catalog so startup warmup succeeds
+openai_models = openai_prov.setdefault("models", [])
+if "Qwen3.5-9B" not in [m["id"] for m in openai_models]:
+    openai_models.append({
+        "id": "Qwen3.5-9B",
+        "name": "Local Qwen 9B",
+        "contextWindow": 32000
+    })
+
+# 3. Set the global default model and target agent
 defaults = config.setdefault("agents", {}).setdefault("defaults", {})
-defaults["model"] = { "primary": "local/Qwen3.5-9B" }
-
-# 3. Update the target agent
+defaults["model"] = { "primary": "openai/Qwen3.5-9B" }
 target_agent = agents[{agent_id}]
-target_agent["model"] = { "primary": "local/Qwen3.5-9B" }
+target_agent["model"] = { "primary": "openai/Qwen3.5-9B" }
 
 write {config} back
 
