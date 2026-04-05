@@ -211,7 +211,13 @@ read {config} as JSON
 assert target_agent exists
 
 if target_agent.model is string, convert to object: { primary: target_agent.model }
-target_agent.model.primary = "openai/gpt-5.2"
+target_agent.model.primary = "openai/Qwen3.5-9B"
+
+ensure agents.defaults.models exists (create objects if missing)
+inject into agents.defaults.models:
+  "openai/Qwen3.5-9B": {
+    "alias": "Local Qwen 9B"
+  }
 
 write {config} back
 
