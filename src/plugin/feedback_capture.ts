@@ -255,12 +255,16 @@ export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefi
     return typeof content === "string" ? content : JSON.stringify(content);
   };
 
-  const spawnAgent = (params: SpawnParams) => spawnSubagent("main", params);
-  const spawnOracle = (params: SpawnParams) => spawnSubagent(config.oracleSubagent, params);
-
   // --- Confirmation channel ---
   const pendingResponses = new Map<string, (text: string | null) => void>();
   let activeSessionKey = "agent:main:main";
+
+  const spawnAgent = (params: SpawnParams) => {
+    const match = activeSessionKey.match(/^agent:([^:]+):/);
+    const targetAgent = match ? match[1] : "main";
+    return spawnSubagent(targetAgent, params);
+  };
+  const spawnOracle = (params: SpawnParams) => spawnSubagent(config.oracleSubagent, params);
 
   const sendMessage = async (_to: string, text: string): Promise<void> => {
     const { runId } = await api.runtime.subagent.run({
