@@ -234,7 +234,28 @@ write AUTH_PROFILES_PATH back
 
 ---
 
-## STEP 11 — Validate all
+## STEP 11 — Create daemon (Scheduled Task)
+
+```
+LLAMACPP_BIN = "{LLAMACPP_DIR}/build/bin/llama-server.exe"
+ARGS = "-m {MODEL_PATH} --port 8080 --lora-init-without-apply"
+
+run: Register Scheduled Task "llama-cpp-server"
+  Triggers: At log on
+  Action: Start a program
+    Program/script: {LLAMACPP_BIN}
+    Add arguments: {ARGS}
+  Run whether user is logged on or not
+  Hidden window
+
+run: Start-ScheduledTask -TaskName "llama-cpp-server"
+
+validate: Invoke-RestMethod "http://localhost:8080/health"
+```
+
+---
+
+## STEP 12 — Validate all
 
 ```
 assert: python -c "import torch; assert torch.cuda.is_available()"
