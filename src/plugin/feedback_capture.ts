@@ -190,12 +190,19 @@ export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefi
     api.logger.warn("reinforteach: no adaptive_learning in plugin config — plugin inactive");
     return undefined;
   }
-  const config = loadConfig(JSON.stringify(api.pluginConfig));
+  let config;
+  try {
+    config = loadConfig(JSON.stringify(api.pluginConfig));
+  } catch (err) {
+    api.logger.error("reinforteach: invalid plugin config", { error: String(err) });
+    return undefined;
+  }
+  api.logger.info("reinforteach: config loaded", { oracle: config.oracleSubagent, model: config.modelPath });
 
   // --- Sessions ---
-  const storePath = api.runtime.agent.session.resolveStorePath(api.config);
-
+  // storePath resolved lazily so a bad config doesn't abort registration.
   const getSessions = async (): Promise<SessionEntry[]> => {
+    const storePath = api.runtime.agent.session.resolveStorePath(api.config);
     const store = api.runtime.agent.session.loadSessionStore(storePath);
     return Object.entries(store)
       .filter(([, e]) => !e.spawnedBy)
@@ -317,6 +324,7 @@ export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefi
     log,
   };
 
+  api.logger.info("reinforteach: starting scheduler");
   // --- Scheduler ---
   startCron(
     {

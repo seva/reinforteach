@@ -8,35 +8,22 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "enabled": {
-        "type": "boolean",
-        "default": true,
-        "description": "Enable feedback capture and candidate pipeline"
-      },
-      "feedbackWindowTurns": {
-        "type": "number",
-        "default": 5,
-        "description": "Number of turns to search back when attributing feedback to an agent turn"
-      },
-      "confidenceThreshold": {
-        "type": "number",
-        "default": 0.7,
-        "description": "Minimum |sentiment × magnitude| to pass a candidate to the buffer"
-      },
-      "trainingTrigger": {
+      "adaptive_learning": {
         "type": "object",
+        "description": "Training pipeline configuration",
         "properties": {
-          "minCandidates": { "type": "number", "default": 20 },
-          "maxInterval": { "type": "string", "default": "7d" }
+          "feedback_window_turns": { "type": "number" },
+          "confidence_threshold": { "type": "number" },
+          "training_trigger": {
+            "type": "object",
+            "properties": {
+              "min_candidates": { "type": "number" },
+              "max_interval": { "type": "string" }
+            }
+          },
+          "model_path": { "type": "string" },
+          "oracle_subagent": { "type": "string" }
         }
-      },
-      "modelPath": {
-        "type": "string",
-        "description": "Path to the .gguf model file being trained"
-      },
-      "oracleSubagent": {
-        "type": "string",
-        "description": "Agent ID of the oracle subagent used to generate chosen completions"
       }
     },
     "required": []
