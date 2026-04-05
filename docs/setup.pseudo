@@ -234,21 +234,18 @@ write AUTH_PROFILES_PATH back
 
 ---
 
-## STEP 11 — Create daemon (Scheduled Task)
+## STEP 11 — Create daemon (Startup Folder)
 
 ```
 LLAMACPP_BIN = "{LLAMACPP_DIR}/build/bin/llama-server.exe"
 ARGS = "-m {MODEL_PATH} --port 8080 --lora-init-without-apply"
+STARTUP_DIR = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
 
-run: Register Scheduled Task "llama-cpp-server"
-  Triggers: At log on
-  Action: Start a program
-    Program/script: {LLAMACPP_BIN}
-    Add arguments: {ARGS}
-  Run whether user is logged on or not
-  Hidden window
+write to {STARTUP_DIR}\llama-cpp-server.cmd:
+  @echo off
+  start "" /min "{LLAMACPP_BIN}" {ARGS}
 
-run: Start-ScheduledTask -TaskName "llama-cpp-server"
+run: & "{STARTUP_DIR}\llama-cpp-server.cmd"
 
 validate: Invoke-RestMethod "http://localhost:8080/health"
 ```
