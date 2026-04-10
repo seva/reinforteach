@@ -148,8 +148,8 @@ describe("Phase 5 verification — pipeline_e2e", () => {
       Promise.resolve().then(() => fn("approve"));
     };
 
-    // Fire the feedback event
-    await hooks["message_received"](
+    // Fire the feedback event (fire-and-forget — returns immediately)
+    hooks["message_received"](
       {
         from: "operator",
         content: "That was wrong — I wanted to see recent commits, not uncommitted changes.",
@@ -157,6 +157,9 @@ describe("Phase 5 verification — pipeline_e2e", () => {
       },
       { channelId: "telegram", sessionKey: "agent:main:main" },
     );
+
+    // Wait for the async pipeline to complete (all subagents are mocked, so it's fast)
+    await new Promise((r) => setTimeout(r, 200));
 
     // Plugin creates files under tmpDir/reinforteach/ (the stateDir subdir)
     const trainingFile = path.join(tmpDir, "reinforteach", "training_buffer.jsonl");

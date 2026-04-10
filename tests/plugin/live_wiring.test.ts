@@ -257,7 +257,8 @@ describe("live plugin default export", () => {
 
   // --- pipeline error catch ---
 
-  it("pipeline errors are caught and logged, not thrown", async () => {
+  it("pipeline errors are caught and logged as warnings, not thrown", async () => {
+    vi.useFakeTimers();
     const { api, fire } = makeApi();
     // Make attribution throw
     const { attributeFeedback } = await import("../../src/attribution.js");
@@ -273,10 +274,14 @@ describe("live plugin default export", () => {
       ),
     ).resolves.not.toThrow();
 
-    expect(api.logger.error).toHaveBeenCalledWith(
-      "reinforteach: pipeline error",
+    // Fire-and-forget: advance timers to let the async pipeline run
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(api.logger.warn).toHaveBeenCalledWith(
+      "reinforteach: pipeline degraded",
       expect.objectContaining({ error: expect.stringContaining("attribution exploded") }),
     );
+    vi.useRealTimers();
   });
 
   // --- after_tool_call handler ---

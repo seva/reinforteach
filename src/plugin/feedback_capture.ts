@@ -243,7 +243,8 @@ export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefi
       ...(params.extraSystemPrompt && { extraSystemPrompt: params.extraSystemPrompt }),
       deliver: false,
     });
-    const waited = await api.runtime.subagent.waitForRun({ runId, timeoutMs: params.timeout ?? 60_000 });
+    // 5-minute default timeout — local models are slow
+    const waited = await api.runtime.subagent.waitForRun({ runId, timeoutMs: params.timeout ?? 300_000 });
     if (waited.status === "error") throw new Error(`Subagent error: ${waited.error ?? "unknown"}`);
     if (waited.status === "timeout") throw new Error("Subagent timed out");
     const { messages } = await api.runtime.subagent.getSessionMessages({ sessionKey, limit: 5 });
@@ -375,16 +376,19 @@ export function _buildLivePlugin(api: OpenClawApi): _LivePluginTestSeam | undefi
       return;
     }
 
-    try {
-      const feedbackEvent = handleMessageReceived(event, ctx);
-      const sessions = await getSessions();
-      await handleFeedbackEvent(feedbackEvent, sessions, config, {
-        ...pipelineCtx,
-        operatorId: feedbackEvent.from,
-      });
-    } catch (err) {
-      api.logger.error("reinforteach: pipeline error", { error: String(err) });
-    }
+    // Fire-and-forget: pipeline runs in background, never blocks user response
+    void (async () => {
+      try {
+        const feedbackEvent = handleMessageReceived(event, ctx);
+        const sessions = await getSessions();
+        await handleFeedbackEvent(feedbackEvent, sessions, config, {
+          ...pipelineCtx,
+          operatorId: feedbackEvent.from,
+        });
+      } catch (err) {
+        api.logger.warn("reinforteach: pipeline degraded", { error: String(err) });
+      }
+    })();
   });
 
   api.on("after_tool_call", (event: unknown, ctx: unknown) => {
