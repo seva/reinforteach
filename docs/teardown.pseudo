@@ -1,0 +1,137 @@
+# reinforteach — Teardown
+
+Pseudocode runbook. Reverts OpenClaw configuration changes from setup.pseudo.
+Does NOT remove installed files (CUDA, Python packages, llama.cpp, model GGUF).
+
+## Args
+
+| Arg | Description |
+|---|---|
+| `--agent-id` | Target agent ID in `openclaw.json` to revert |
+| `--original-model` | Original model to restore (default: `dashscope/qwen3.6-plus`) |
+| `--config` | Path to `openclaw.json` (default: `~/.openclaw/openclaw.json`) |
+
+---
+
+## STEP 1 — Restore agent model
+
+```
+read {config} as JSON
+
+target_agent = agents[{agent_id}]
+if target_agent.model.primary == "openai/Qwen3.5-9B":
+    target_agent.model.primary = "{original_model}"
+
+if agents.defaults.model.primary == "openai/Qwen3.5-9B":
+    agents.defaults.model.primary = "{original_model}"
+
+write {config} back
+```
+
+---
+
+## STEP 2 — Remove custom provider config
+
+```
+read {config} as JSON
+
+# Remove Qwen3.5-9B from openai provider catalog
+openai_models = models.providers.openai.models
+if exists:
+    remove any entry where id == "Qwen3.5-9B"
+    if openai_models is now empty:
+        delete models.providers.openai.models
+
+# Remove baseUrl/apiKey/api from openai provider if they were added for local routing
+openai_prov = models.providers.openai
+if openai_prov.baseUrl == "http://localhost:8080/v1":
+    delete openai_prov.baseUrl
+    delete openai_prov.apiKey
+    delete openai_prov.api
+
+# Remove model catalog entry
+if agents.defaults.models["openai/Qwen3.5-9B"] exists:
+    delete agents.defaults.models["openai/Qwen3.5-9B"]
+
+# Revert contextTokens and timeoutSeconds if they were set for local model
+if agents.defaults.contextTokens == 65536:
+    delete agents.defaults.contextTokens
+if agents.defaults.timeoutSeconds == 1800:
+    delete agents.defaults.timeoutSeconds
+
+write {config} back
+```
+
+---
+
+## STEP 3 — Remove reinforteach plugin config
+
+```
+read {config} as JSON
+
+# Remove from allow list
+if "reinforteach" in plugins.allow:
+    remove "reinforteach" from plugins.allow
+
+# Remove plugin entry
+if plugins.entries["reinforteach"] exists:
+    delete plugins.entries["reinforteach"]
+
+# Remove from load paths
+if "C:\Users\seval\reinforteach" in plugins.load.paths:
+    remove it from plugins.load.paths
+
+write {config} back
+```
+
+---
+
+## STEP 4 — Clean up auth profiles
+
+```
+AUTH_PROFILES_PATH = "~/.openclaw/agents/{agent_id}/agent/auth-profiles.json"
+read AUTH_PROFILES_PATH as JSON
+
+if "openai:local" in profiles:
+    delete profiles["openai:local"]
+
+if lastGood.openai == "openai:local":
+    delete lastGood.openai
+
+write AUTH_PROFILES_PATH back
+```
+
+---
+
+## STEP 5 — Stop llama.cpp daemon
+
+```
+run: Stop-Process -Name "llama-server" -Force -ErrorAction SilentlyContinue
+
+STARTUP_DIR = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+if {STARTUP_DIR}\llama-cpp-server.cmd exists:
+    delete {STARTUP_DIR}\llama-cpp-server.cmd
+
+validate: Invoke-RestMethod "http://localhost:8080/health" returns connection refused
+```
+
+---
+
+## STEP 6 — Restart gateway and verify
+
+```
+run: openclaw gateway restart
+wait 5 seconds
+
+validate:
+  openclaw models status shows agent model == "{original_model}"
+  no "reinforteach: config loaded" in gateway logs
+  no "reinforteach: starting scheduler" in gateway logs
+  openai:local not in auth profiles
+
+print: "reinforteach config reverted"
+print: "  agent model: {original_model}"
+print: "  plugin: removed from openclaw.json"
+print: "  llama.cpp daemon: stopped"
+print: "  installed files preserved (CUDA, Python, llama.cpp, model GGUF)"
+```
